@@ -8,19 +8,19 @@ public class PlayerInventory : NetworkBehaviour
 {
     // this script will store the current cards the player has
     public List<string> hand = new List<string>();
-    public TextMeshProUGUI handText;
+    [HideInInspector] public TextMeshProUGUI handText;
 
-    // this gets called by server and clients
     public void ChangeHand(List<string> newHand)
     {
         hand = newHand;
-        
+
         if (isLocalPlayer)
         {
             DisplayHand();
         }
     }
 
+    [ClientCallback]
     private void DisplayHand()
     {
         string handString = "";
