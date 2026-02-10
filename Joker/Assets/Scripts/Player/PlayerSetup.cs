@@ -26,7 +26,7 @@ public class PlayerSetup : NetworkBehaviour
             gameManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager>();
 
             gameManager.localPlayer = GetComponent<Player>();
-            GetComponent<PlayerInventory>().handText = cam.GetComponent<CameraSetup>().cardText;
+            GetComponent<PlayerInventory>().handText = cam.GetComponent<CameraSetup>().deckText;
             this.gameObject.layer = 6;
         }
     }

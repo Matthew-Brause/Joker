@@ -22,6 +22,9 @@ public class GameManager : NetworkBehaviour
     {
         if (isServer)
         {
+            // TODO:
+            // make sure there are 4 players in the game before starting
+
             // setup the decks
             playingDeck = new List<string>(fixedDeck);
 
@@ -46,12 +49,13 @@ public class GameManager : NetworkBehaviour
                     playingDeck.RemoveAt(cardIndex);
                 }
 
-                DealHand(player.gameObject, tempHand);
-                RpcDealHand(player.gameObject, tempHand);
+                player.GetComponent<PlayerInventory>().ChangeWholeHand(tempHand);
+                player.GetComponent<PlayerInventory>().RpcChangeWholeHand(tempHand);
             }
 
             // start the game
-            roundNumber = 1;
+            // round 0 is the trick choosing part
+            roundNumber = 0;
             turnNumber = 0;
 
             playerOrder[turnNumber].GetComponent<Player>().TurnStart();
@@ -70,34 +74,18 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    
-
-    private void DealHand(GameObject player, List<string> hand)
-    {
-        player.GetComponent<PlayerInventory>().ChangeHand(hand);
-    }
-
-    [ClientRpc]
-    private void RpcDealHand(GameObject player, List<string> hand)
-    {
-        if (isServer) {return;}
-
-        DealHand(player, hand);
-    }
-
     // should only be called by clients
     [ClientCallback]
     public void EndPlayerTurn()
     {
-        localPlayer.CmdTurnEnd();
+        localPlayer.CalculateActions();
     }
 
     // should only be called by server
     [ServerCallback]
     public void CalculateNextPlayer()
     {
-        
-        if (turnNumber < 3)
+        if (turnNumber < playerOrder.Count - 1)
         {
             turnNumber += 1;
         }
@@ -118,7 +106,6 @@ public class GameManager : NetworkBehaviour
                 roundNumber += 1;
             }
         }
-        
 
         playerOrder[turnNumber].GetComponent<Player>().TurnStart();
         playerOrder[turnNumber].GetComponent<Player>().RpcTurnStart();

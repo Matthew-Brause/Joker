@@ -7,23 +7,69 @@ public class Player : NetworkBehaviour
 {
     public bool playerTurn = false;
 
-    // TODO:
-    // needs a bet and how many bets he has
+    [SyncVar] public int tricks;
+    [SyncVar] public int tricksWon;
+    [SyncVar] public string cardInPlay;
 
-    public void TurnStart()
+    private GameObject cam;
+    public GameManager gameManager;
+    private PlayerInventory inventory;
+
+    private void Start()
     {
-        // TODO:
-        // add visuals when its a players turn
-        playerTurn = true;
-
-        if (isLocalPlayer)
-        {
-            //TODO:
-            // allow the player to play a card or make a bet...
-        }
+        cam = GameObject.FindGameObjectWithTag("MainCamera");
+        gameManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager>();
+        inventory = GetComponent<PlayerInventory>();
     }
 
-    public void TurnEnd()
+
+    [Command]
+    private void CmdChooseTricks(int trickAmount)
+    {
+        tricks = trickAmount;
+    }
+
+    [Command]
+    private void CmdChooseCard(string cardId)
+    {
+        // TODO:
+        // should display the card for everyone else to see in an rpc call
+        cardInPlay = cardId;
+    }
+    
+    [ClientCallback]
+    public void CalculateActions()
+    {
+        if (isLocalPlayer)
+        {
+            // allow the player to play a card or choose tricks...
+            if (gameManager.roundNumber == 0)
+            {
+                int trickAmount = cam.GetComponent<CameraSetup>().trickAmount;
+                CmdChooseTricks(trickAmount);
+            }
+            else
+            {
+                string cardId = cam.GetComponent<CameraSetup>().playCardText.text;
+
+                // need to check that cardId is in the hand
+                if (inventory.hand.Contains(cardId))
+                {
+                    CmdChooseCard(cardId);
+                    inventory.CmdRemoveCard(cardId);
+                }
+                else
+                {
+                    Debug.Log("Invalid Card Choice!");
+                    return;
+                }
+            }
+        }
+
+        CmdTurnEnd();
+    }
+
+    private void TurnEnd()
     {
         playerTurn = false;
     }
@@ -31,10 +77,10 @@ public class Player : NetworkBehaviour
     [Command]
     public void CmdTurnEnd()
     {
-        GetComponent<PlayerSetup>().gameManager.CalculateNextPlayer();
-
         TurnEnd();
         RpcTurnEnd();
+
+        gameManager.CalculateNextPlayer();
     }
 
     [ClientRpc]
@@ -43,6 +89,13 @@ public class Player : NetworkBehaviour
         if (isServer) {return;}
 
         TurnEnd();
+    }
+
+    public void TurnStart()
+    {
+        // TODO:
+        // add visuals when its a players turn
+        playerTurn = true;
     }
 
     [ClientRpc]
