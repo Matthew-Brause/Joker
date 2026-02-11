@@ -13,13 +13,13 @@ public class CameraSetup : MonoBehaviour
     public TextMeshProUGUI deckText;
     public int trickAmount;
     public TextMeshProUGUI trickText;
-    public TMP_InputField playCardText;
+    public TMP_InputField playCardInput;
 
     private void Start()
     {
         Application.targetFrameRate = 144;
-
         trickAmount = 0;
+        trickText.text = trickAmount.ToString();
     }
 
     public void AddTrick()

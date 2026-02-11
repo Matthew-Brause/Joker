@@ -58,10 +58,10 @@ public class PlayerInventory : NetworkBehaviour
     [ClientCallback]
     private void DisplayHand()
     {
-        string handString = "";
+        string handString = "Your Hand: ";
         foreach (string card in hand)
         {
-            handString += card;
+            handString += card + " ";
         }
         handText.text = handString;
     }

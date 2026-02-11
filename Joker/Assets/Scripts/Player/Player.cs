@@ -1,19 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
 using Mirror;
+using TMPro;
 using UnityEngine;
 
 public class Player : NetworkBehaviour
 {
     public bool playerTurn = false;
 
-    [SyncVar] public int tricks;
+    public int tricks;
     [SyncVar] public int tricksWon;
-    [SyncVar] public string cardInPlay;
+    public string cardInPlay;
 
     private GameObject cam;
     public GameManager gameManager;
     private PlayerInventory inventory;
+
+    [SerializeField] private TextMeshProUGUI playCardText;
+    [SerializeField] private TextMeshProUGUI trickText;
 
     private void Start()
     {
@@ -22,24 +26,55 @@ public class Player : NetworkBehaviour
         inventory = GetComponent<PlayerInventory>();
     }
 
-
     [Command]
     private void CmdChooseTricks(int trickAmount)
     {
         tricks = trickAmount;
+        DisplayTricks();
+        RpcChooseTricks(trickAmount);
+    }
+
+    [ClientRpc]
+    private void RpcChooseTricks(int trickAmount)
+    {
+        if (isServer) {return;}
+
+        tricks = trickAmount;
+        DisplayTricks();
+    }
+
+    private void DisplayTricks()
+    {
+        trickText.text = "Tricks: " + tricks.ToString();
     }
 
     [Command]
     private void CmdChooseCard(string cardId)
     {
-        // TODO:
-        // should display the card for everyone else to see in an rpc call
         cardInPlay = cardId;
+        DisplayPlayCard();
+        RpcChooseCard(cardId);
+    }
+
+    [ClientRpc]
+    private void RpcChooseCard(string cardId)
+    {
+        if (isServer) {return;}
+
+        cardInPlay = cardId;
+        DisplayPlayCard();
+    }
+
+    private void DisplayPlayCard()
+    {
+        playCardText.text = "Played card: " + cardInPlay;
     }
     
+    // should only get called by localplayer
     [ClientCallback]
     public void CalculateActions()
     {
+        // just for safety
         if (isLocalPlayer)
         {
             // allow the player to play a card or choose tricks...
@@ -47,10 +82,12 @@ public class Player : NetworkBehaviour
             {
                 int trickAmount = cam.GetComponent<CameraSetup>().trickAmount;
                 CmdChooseTricks(trickAmount);
+
+                // TODO: hide the buttons for choosing tricks
             }
             else
             {
-                string cardId = cam.GetComponent<CameraSetup>().playCardText.text;
+                string cardId = cam.GetComponent<CameraSetup>().playCardInput.text;
 
                 // need to check that cardId is in the hand
                 if (inventory.hand.Contains(cardId))
@@ -63,10 +100,12 @@ public class Player : NetworkBehaviour
                     Debug.Log("Invalid Card Choice!");
                     return;
                 }
+                
+                // TODO: hide the input for choosing a card
             }
-        }
 
-        CmdTurnEnd();
+            CmdTurnEnd();
+        }
     }
 
     private void TurnEnd()
@@ -93,9 +132,17 @@ public class Player : NetworkBehaviour
 
     public void TurnStart()
     {
-        // TODO:
-        // add visuals when its a players turn
+        // TODO: add visuals when its a players turn
         playerTurn = true;
+
+        if (gameManager.roundNumber == 0)
+        {
+            // TODO: show the buttons for tricks
+        }
+        else
+        {
+            // TODO: show the field for choosing a card
+        }
     }
 
     [ClientRpc]

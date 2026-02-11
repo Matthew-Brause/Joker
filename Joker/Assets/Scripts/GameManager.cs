@@ -16,6 +16,8 @@ public class GameManager : NetworkBehaviour
     public List<PlayerSetup> playerOrder;
     [SyncVar] public int turnNumber;
 
+    [SerializeField] private TextMeshProUGUI roundText;
+
     // can only be run by the server
     [ServerCallback]
     public void StartGame()
@@ -24,6 +26,9 @@ public class GameManager : NetworkBehaviour
         {
             // TODO:
             // make sure there are 4 players in the game before starting
+
+            // TODO:
+            // rotate all the playersUI so that they are in order
 
             // setup the decks
             playingDeck = new List<string>(fixedDeck);
@@ -57,10 +62,23 @@ public class GameManager : NetworkBehaviour
             // round 0 is the trick choosing part
             roundNumber = 0;
             turnNumber = 0;
+            DisplayRoundNumber();
+            RpcDisplayRoundNumber();
 
             playerOrder[turnNumber].GetComponent<Player>().TurnStart();
             playerOrder[turnNumber].GetComponent<Player>().RpcTurnStart();
         }
+    }
+
+    private void DisplayRoundNumber()
+    {
+        roundText.text = "Round: " + roundNumber.ToString();
+    }
+
+    [ClientRpc]
+    private void RpcDisplayRoundNumber()
+    {
+        DisplayRoundNumber();
     }
 
     [ClientRpc]
@@ -74,7 +92,7 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    // should only be called by clients
+    // should only be called by local player
     [ClientCallback]
     public void EndPlayerTurn()
     {
@@ -91,19 +109,20 @@ public class GameManager : NetworkBehaviour
         }
         else
         {
-            // TODO:
-            // that was the last turn, decide winner and reorder if it wasn't the last round
+            // TODO: that was the last turn, 
+            // decide winner and reorder if it wasn't the last round
 
             // check if it was the last round
             if (roundNumber == cardsPerPlayer)
             {
-                // TODO:
-                // calculate points based on player bets
+                // TODO: calculate points based on player bets
             }
             else
             {
                 turnNumber = 0;
                 roundNumber += 1;
+                DisplayRoundNumber();
+                RpcDisplayRoundNumber();
             }
         }
 
