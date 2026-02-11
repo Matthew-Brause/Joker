@@ -14,6 +14,9 @@ public class Interactable : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
     [SerializeField] private InteractableTypes interactableType;
+
+
+    // TODO: make button animation
     
     public void Activate()
     {

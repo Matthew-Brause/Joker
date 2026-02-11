@@ -36,8 +36,6 @@ public class PlayerInteract : NetworkBehaviour
         RaycastHit hit;
         if (Physics.Raycast(cam.position, cam.forward, out hit, maxRaycastDistance, interactLayerMask))
         {
-            Debug.Log(hit.transform.name);
-
             if (hit.transform.gameObject.layer == 8)
             {
                 // ray hit a button/interactable

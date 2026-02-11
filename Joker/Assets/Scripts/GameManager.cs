@@ -13,7 +13,7 @@ public class GameManager : NetworkBehaviour
     public int cardsPerPlayer = 2;
     public Player localPlayer;
 
-    [SyncVar] public int roundNumber;
+    public int roundNumber;
     public List<PlayerSetup> playerOrder;
     [SyncVar] public int turnNumber;
 
@@ -29,8 +29,6 @@ public class GameManager : NetworkBehaviour
             {
                 Debug.LogError("Not enough cards for the players!");
             }
-
-            // TODO: move/rotate all the playersUI so that they are in order
 
             // setup the decks
             foreach (Card card in cardDeck)
@@ -54,14 +52,7 @@ public class GameManager : NetworkBehaviour
                 players.Add(player.gameObject);
             }
             // also move player UIs to correct places
-            int canvasIndex = 0;
-            foreach (PlayerSetup player in playerOrder)
-            {
-                player.playerUICanvas.SetParent(playerUIPositions[canvasIndex]);
-                player.playerUICanvas.position = playerUIPositions[canvasIndex].position;
-                player.playerUICanvas.rotation = playerUIPositions[canvasIndex].rotation;
-                canvasIndex += 1;
-            }
+            SetPlayerUI();
             RpcSetPlayerOrder(players);
 
             // deal the hands
@@ -81,10 +72,10 @@ public class GameManager : NetworkBehaviour
 
             // start the game
             // round 0 is the trick choosing part
-            roundNumber = 0;
             turnNumber = 0;
-            DisplayRoundNumber();
-            RpcDisplayRoundNumber();
+            int newRoundNumber = 0;
+            DisplayRoundNumber(newRoundNumber);
+            RpcDisplayRoundNumber(newRoundNumber);
 
             playerOrder[turnNumber].GetComponent<Player>().TurnStart();
             playerOrder[turnNumber].GetComponent<Player>().RpcTurnStart();
@@ -108,15 +99,18 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    private void DisplayRoundNumber()
+    private void DisplayRoundNumber(int newRoundNumber)
     {
+        roundNumber = newRoundNumber;
         roundText.text = "Round: " + roundNumber.ToString();
     }
 
     [ClientRpc]
-    private void RpcDisplayRoundNumber()
+    private void RpcDisplayRoundNumber(int newRoundNumber)
     {
-        DisplayRoundNumber();
+        if (isServer) {return;}
+
+        DisplayRoundNumber(newRoundNumber);
     }
 
     [ClientRpc]
@@ -129,12 +123,24 @@ public class GameManager : NetworkBehaviour
             playerOrder.Add(player.GetComponent<PlayerSetup>());
         }
 
+        SetPlayerUI();
+    }
+
+    private void SetPlayerUI()
+    {
         int canvasIndex = 0;
         foreach (PlayerSetup player in playerOrder)
         {
             player.playerUICanvas.SetParent(playerUIPositions[canvasIndex]);
             player.playerUICanvas.position = playerUIPositions[canvasIndex].position;
             player.playerUICanvas.rotation = playerUIPositions[canvasIndex].rotation;
+
+            // rotate the UI away from the player if it isn't the local player
+            if (player != localPlayer.GetComponent<PlayerSetup>())
+            {
+                player.playerUICanvas.Rotate(0f, 180f, 0f, Space.Self);
+            }
+            
             canvasIndex += 1;
         }
     }
@@ -167,9 +173,9 @@ public class GameManager : NetworkBehaviour
             else
             {
                 turnNumber = 0;
-                roundNumber += 1;
-                DisplayRoundNumber();
-                RpcDisplayRoundNumber();
+                int newRoundNumber = roundNumber;
+                DisplayRoundNumber(newRoundNumber + 1);
+                RpcDisplayRoundNumber(newRoundNumber + 1);
             }
         }
 
