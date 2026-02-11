@@ -18,7 +18,10 @@ public class GameManager : NetworkBehaviour
     [SyncVar] public int turnNumber;
 
     [SerializeField] private TextMeshProUGUI roundText;
+
+    // TODO: UI and Card positions need to be ordered the same way, fix this system using a new class
     [SerializeField] public List<Transform> playerUIPositions;
+    [SerializeField] public List<Transform> playedCardPositions;
 
     // should be called by the host
     public void StartGame()
@@ -66,8 +69,8 @@ public class GameManager : NetworkBehaviour
                     cardIdDeck.RemoveAt(cardIndex);
                 }
 
-                player.GetComponent<PlayerInventory>().ChangeWholeHand(tempHand);
-                player.GetComponent<PlayerInventory>().RpcChangeWholeHand(tempHand);
+                player.GetComponent<PlayerInventory>().ChangeHand(tempHand);
+                player.GetComponent<PlayerInventory>().RpcChangeHand(tempHand);
             }
 
             // start the game

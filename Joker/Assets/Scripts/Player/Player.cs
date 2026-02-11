@@ -68,8 +68,17 @@ public class Player : NetworkBehaviour
 
     private void DisplayPlayCard()
     {
-        // TODO: display an actual card instead of using text
-        playCardText.text = "Played card: " + cardInPlay;
+        Card cardData = gameManager.deckDictionary[cardInPlay];
+
+        int playerIndex = gameManager.playerOrder.IndexOf(GetComponent<PlayerSetup>());
+        Transform ui = gameManager.playedCardPositions[playerIndex];
+
+        GameObject cardPrefab = GetComponent<PlayerInventory>().cardPrefab;
+        GameObject card = Instantiate(cardPrefab, ui.position, ui.rotation);
+        card.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+        
+        // the name of the card is used when the player interacts with a card
+        card.name = cardInPlay;
     }
     
     // should only get called by localplayer

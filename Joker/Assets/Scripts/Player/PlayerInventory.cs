@@ -9,7 +9,7 @@ public class PlayerInventory : NetworkBehaviour
     public List<string> hand = new List<string>();
     [HideInInspector] public GameManager gameManager;
 
-    [SerializeField] private GameObject cardPrefab;
+    [SerializeField] public GameObject cardPrefab;
 
     private void Start()
     {
@@ -41,7 +41,7 @@ public class PlayerInventory : NetworkBehaviour
     }
 
     [ServerCallback]
-    public void ChangeWholeHand(List<string> newHand)
+    public void ChangeHand(List<string> newHand)
     {
         hand = newHand;
         if (isLocalPlayer)
@@ -51,7 +51,7 @@ public class PlayerInventory : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void RpcChangeWholeHand(List<string> newHand)
+    public void RpcChangeHand(List<string> newHand)
     {
         if (isServer) {return;}
 
