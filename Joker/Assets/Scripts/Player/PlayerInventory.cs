@@ -83,8 +83,10 @@ public class PlayerInventory : NetworkBehaviour
         {
             Card cardData = gameManager.deckDictionary[cardId];
 
-            // TODO: instantiate the cards near the players UI (should create a dictionary with players and their UI)
-            GameObject card = Instantiate(cardPrefab);
+            int playerIndex = gameManager.playerOrder.IndexOf(GetComponent<PlayerSetup>());
+            Transform ui = gameManager.playerUIPositions[playerIndex];
+
+            GameObject card = Instantiate(cardPrefab, ui.position, ui.rotation);
             card.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
             
             // the name of the card is used when the player picks the card

@@ -25,7 +25,10 @@ public class GameManager : NetworkBehaviour
     {
         if (isServer)
         {
-            // TODO: make sure there are 4 players in the game before starting
+            if (PlayerSetup.playerList.Count > cardDeck.Count * cardsPerPlayer)
+            {
+                Debug.LogError("Not enough cards for the players!");
+            }
 
             // TODO: move/rotate all the playersUI so that they are in order
 
@@ -40,6 +43,7 @@ public class GameManager : NetworkBehaviour
             {
                 deckDictionary.Add(cardIdDeck[i], cardDeck[i]);
             }
+            RpcSetupDecks();
 
             // set an order to the players
             playerOrder = new List<PlayerSetup>();
@@ -84,6 +88,23 @@ public class GameManager : NetworkBehaviour
 
             playerOrder[turnNumber].GetComponent<Player>().TurnStart();
             playerOrder[turnNumber].GetComponent<Player>().RpcTurnStart();
+        }
+    }
+
+    [ClientRpc]
+    private void RpcSetupDecks()
+    {
+        if (isServer) {return;}
+
+        foreach (Card card in cardDeck)
+        {
+            string cardId = card.cardValue.ToString() + card.cardSuit;
+            cardIdDeck.Add(cardId);
+        }
+        deckDictionary = new Dictionary<string, Card>();
+        for (int i = 0; i < cardIdDeck.Count; i++)
+        {
+            deckDictionary.Add(cardIdDeck[i], cardDeck[i]);
         }
     }
 

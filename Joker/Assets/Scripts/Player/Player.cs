@@ -68,6 +68,7 @@ public class Player : NetworkBehaviour
 
     private void DisplayPlayCard()
     {
+        // TODO: actually display a card instead of using text
         playCardText.text = "Played card: " + cardInPlay;
     }
     

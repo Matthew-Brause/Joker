@@ -1799,7 +1799,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: aa15e877c43f3604db19ce8288fc33da, type: 2}
   - {fileID: 11400000, guid: af6d09af953d71e48a2effbe13057351, type: 2}
   cardIdDeck: []
-  cardsPerPlayer: 3
+  cardsPerPlayer: 2
   localPlayer: {fileID: 0}
   roundNumber: 0
   playerOrder: []
