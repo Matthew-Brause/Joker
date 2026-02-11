@@ -11,9 +11,10 @@ public class Player : NetworkBehaviour
     public int tricks;
     [SyncVar] public int tricksWon;
     public string cardInPlay;
+    public string selectedCard;
 
     private GameObject cam;
-    public GameManager gameManager;
+    [HideInInspector] public GameManager gameManager;
     private PlayerInventory inventory;
 
     [SerializeField] private TextMeshProUGUI playCardText;
@@ -43,7 +44,7 @@ public class Player : NetworkBehaviour
         DisplayTricks();
     }
 
-    private void DisplayTricks()
+    public void DisplayTricks()
     {
         trickText.text = "Tricks: " + tricks.ToString();
     }
@@ -77,23 +78,24 @@ public class Player : NetworkBehaviour
         // just for safety
         if (isLocalPlayer)
         {
+            // the player is trying to end his turn, make sure it actually is his turn
+            if (!playerTurn) {return;}
+
             // allow the player to play a card or choose tricks...
             if (gameManager.roundNumber == 0)
             {
-                int trickAmount = cam.GetComponent<CameraSetup>().trickAmount;
-                CmdChooseTricks(trickAmount);
+                // tricks was changed for the localplayer by buttons
+                CmdChooseTricks(tricks);
 
                 // TODO: hide the buttons for choosing tricks
             }
             else
             {
-                string cardId = cam.GetComponent<CameraSetup>().playCardInput.text;
-
                 // need to check that cardId is in the hand
-                if (inventory.hand.Contains(cardId))
+                if (inventory.hand.Contains(selectedCard))
                 {
-                    CmdChooseCard(cardId);
-                    inventory.CmdRemoveCard(cardId);
+                    CmdChooseCard(selectedCard);
+                    inventory.CmdRemoveCard(selectedCard);
                 }
                 else
                 {

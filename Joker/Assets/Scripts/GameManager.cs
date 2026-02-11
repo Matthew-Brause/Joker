@@ -7,8 +7,9 @@ using UnityEngine;
 
 public class GameManager : NetworkBehaviour
 {
-    public List<string> fixedDeck = new List<string>();
-    public List<string> playingDeck;
+    public Dictionary<string, Card> deckDictionary;
+    public List<Card> cardDeck = new List<Card>();
+    [HideInInspector] public List<string> cardIdDeck;
     public int cardsPerPlayer = 2;
     public Player localPlayer;
 
@@ -17,29 +18,45 @@ public class GameManager : NetworkBehaviour
     [SyncVar] public int turnNumber;
 
     [SerializeField] private TextMeshProUGUI roundText;
+    [SerializeField] public List<Transform> playerUIPositions;
 
-    // can only be run by the server
-    [ServerCallback]
+    // should be called by the host
     public void StartGame()
     {
         if (isServer)
         {
-            // TODO:
-            // make sure there are 4 players in the game before starting
+            // TODO: make sure there are 4 players in the game before starting
 
-            // TODO:
-            // rotate all the playersUI so that they are in order
+            // TODO: move/rotate all the playersUI so that they are in order
 
             // setup the decks
-            playingDeck = new List<string>(fixedDeck);
+            foreach (Card card in cardDeck)
+            {
+                string cardId = card.cardValue.ToString() + card.cardSuit;
+                cardIdDeck.Add(cardId);
+            }
+            deckDictionary = new Dictionary<string, Card>();
+            for (int i = 0; i < cardIdDeck.Count; i++)
+            {
+                deckDictionary.Add(cardIdDeck[i], cardDeck[i]);
+            }
 
-            // should set an order to the players
+            // set an order to the players
             playerOrder = new List<PlayerSetup>();
             List<GameObject> players = new List<GameObject>();
             foreach (PlayerSetup player in PlayerSetup.playerList)
             {
                 playerOrder.Add(player);
                 players.Add(player.gameObject);
+            }
+            // also move player UIs to correct places
+            int canvasIndex = 0;
+            foreach (PlayerSetup player in playerOrder)
+            {
+                player.playerUICanvas.SetParent(playerUIPositions[canvasIndex]);
+                player.playerUICanvas.position = playerUIPositions[canvasIndex].position;
+                player.playerUICanvas.rotation = playerUIPositions[canvasIndex].rotation;
+                canvasIndex += 1;
             }
             RpcSetPlayerOrder(players);
 
@@ -49,9 +66,9 @@ public class GameManager : NetworkBehaviour
                 List<string> tempHand = new List<string>();
                 for (int i = 0; i < cardsPerPlayer; i++)
                 {
-                    int cardIndex = Random.Range(1,playingDeck.Count);
-                    tempHand.Add(playingDeck[cardIndex]);
-                    playingDeck.RemoveAt(cardIndex);
+                    int cardIndex = Random.Range(0,cardIdDeck.Count-1);
+                    tempHand.Add(cardIdDeck[cardIndex]);
+                    cardIdDeck.RemoveAt(cardIndex);
                 }
 
                 player.GetComponent<PlayerInventory>().ChangeWholeHand(tempHand);
@@ -89,6 +106,15 @@ public class GameManager : NetworkBehaviour
         foreach(GameObject player in players)
         {
             playerOrder.Add(player.GetComponent<PlayerSetup>());
+        }
+
+        int canvasIndex = 0;
+        foreach (PlayerSetup player in playerOrder)
+        {
+            player.playerUICanvas.SetParent(playerUIPositions[canvasIndex]);
+            player.playerUICanvas.position = playerUIPositions[canvasIndex].position;
+            player.playerUICanvas.rotation = playerUIPositions[canvasIndex].rotation;
+            canvasIndex += 1;
         }
     }
 

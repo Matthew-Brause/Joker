@@ -12,6 +12,7 @@ public class PlayerSetup : NetworkBehaviour
     private GameObject cam;
 
     [HideInInspector] public GameManager gameManager;
+    public Transform playerUICanvas;
 
     public bool canMove = false;
 
@@ -23,6 +24,7 @@ public class PlayerSetup : NetworkBehaviour
         {
             GetComponent<KinematicCharacterMotor>().enabled = false;
             GetComponent<ExampleCharacterController>().enabled = false;
+            GetComponent<PlayerInteract>().enabled = false;
             this.gameObject.layer = 7;
         }
         else
@@ -34,7 +36,6 @@ public class PlayerSetup : NetworkBehaviour
             gameManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager>();
 
             gameManager.localPlayer = GetComponent<Player>();
-            GetComponent<PlayerInventory>().handText = cam.GetComponent<CameraSetup>().deckText;
             this.gameObject.layer = 6;
         }
     }
