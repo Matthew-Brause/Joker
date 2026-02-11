@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using KinematicCharacterController;
+using KinematicCharacterController.Examples;
 using Mirror;
 using UnityEngine;
 
@@ -9,7 +11,9 @@ public class PlayerSetup : NetworkBehaviour
     public readonly static List<PlayerSetup> playerList = new List<PlayerSetup>();
     private GameObject cam;
 
-    public GameManager gameManager;
+    [HideInInspector] public GameManager gameManager;
+
+    public bool canMove = false;
 
     private void Start()
     {
@@ -17,10 +21,14 @@ public class PlayerSetup : NetworkBehaviour
 
         if (!isLocalPlayer)
         {
+            GetComponent<KinematicCharacterMotor>().enabled = false;
+            GetComponent<ExampleCharacterController>().enabled = false;
             this.gameObject.layer = 7;
         }
         else
         {
+            GetComponent<KinematicCharacterMotor>().enabled = canMove;
+            GetComponent<ExampleCharacterController>().enabled = true;
             networkManager = NetworkManager.singleton;
             cam = GameObject.FindGameObjectWithTag("MainCamera");
             gameManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager>();
