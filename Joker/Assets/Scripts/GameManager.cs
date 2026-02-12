@@ -19,15 +19,18 @@ public class GameManager : NetworkBehaviour
 
     [SerializeField] private TextMeshProUGUI roundText;
 
-    // TODO: UI and Card positions need to be ordered the same way, fix this system using a new class
+    // TODO: UI and Card positions need to be ordered the same way, fix this annoyance using a new class
     [SerializeField] public List<Transform> playerUIPositions;
     [SerializeField] public List<Transform> playedCardPositions;
+
+    // TODO: make start button only available to the host
 
     // should be called by the host
     public void StartGame()
     {
         if (isServer)
         {
+            // TODO: make sure there are 4 players in the lobby
             if (PlayerSetup.playerList.Count > cardDeck.Count * cardsPerPlayer)
             {
                 Debug.LogError("Not enough cards for the players!");

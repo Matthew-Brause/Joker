@@ -17,7 +17,6 @@ public class Player : NetworkBehaviour
     [HideInInspector] public GameManager gameManager;
     private PlayerInventory inventory;
 
-    [SerializeField] private TextMeshProUGUI playCardText;
     [SerializeField] private TextMeshProUGUI trickText;
 
     private void Start()

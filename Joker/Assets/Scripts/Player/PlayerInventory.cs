@@ -29,6 +29,7 @@ public class PlayerInventory : NetworkBehaviour
         RpcRemoveCard(cardId);
     }
 
+    [ClientRpc]
     public void RpcRemoveCard(string cardId)
     {
         if (isServer) {return;}

@@ -46,6 +46,8 @@ public class PlayerInteract : NetworkBehaviour
                 // ray hit a card
                 string cardId = hit.transform.name;
                 player.selectedCard = cardId;
+
+                // TODO: give some sort of visual of which card is selected
             }
         }
     }
