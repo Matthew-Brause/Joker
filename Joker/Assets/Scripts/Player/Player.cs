@@ -10,7 +10,8 @@ public class Player : NetworkBehaviour
 
     public int tricks;
     [SyncVar] public int tricksWon;
-    public string cardInPlay;
+    public string cardInPlayID;
+    public GameObject cardInPlay;
     public string selectedCard;
 
     private GameObject cam;
@@ -51,7 +52,7 @@ public class Player : NetworkBehaviour
     [Command]
     private void CmdChooseCard(string cardId)
     {
-        cardInPlay = cardId;
+        cardInPlayID = cardId;
         DisplayPlayCard();
         RpcChooseCard(cardId);
     }
@@ -61,23 +62,28 @@ public class Player : NetworkBehaviour
     {
         if (isServer) {return;}
 
-        cardInPlay = cardId;
+        cardInPlayID = cardId;
         DisplayPlayCard();
     }
 
     private void DisplayPlayCard()
     {
-        Card cardData = gameManager.deckDictionary[cardInPlay];
+        Card cardData = gameManager.deckDictionary[cardInPlayID];
 
         int playerIndex = gameManager.playerOrder.IndexOf(GetComponent<PlayerSetup>());
         Transform ui = gameManager.playedCardPositions[playerIndex];
 
+        if (cardInPlay != null)
+        {
+            Destroy(cardInPlay);
+        }
+
         GameObject cardPrefab = GetComponent<PlayerInventory>().cardPrefab;
-        GameObject card = Instantiate(cardPrefab, ui.position, ui.rotation);
-        card.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+        cardInPlay = Instantiate(cardPrefab, ui.position, ui.rotation);
+        cardInPlay.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
         
         // the name of the card is used when the player interacts with a card
-        card.name = cardInPlay;
+        cardInPlay.name = cardInPlayID;
     }
     
     // should only get called by localplayer

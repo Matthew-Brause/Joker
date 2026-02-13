@@ -174,6 +174,9 @@ public class GameManager : NetworkBehaviour
             // check if it was the last round
             if (roundNumber == cardsPerPlayer)
             {
+                DisplayRoundNumber(-1);
+                RpcDisplayRoundNumber(-1);
+
                 // TODO: calculate points based on player bets
             }
             else
