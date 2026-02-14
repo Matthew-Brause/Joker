@@ -1,0 +1,213 @@
+using System.Collections;
+using System.Collections.Generic;
+using Mirror;
+using Steamworks;
+using TMPro;
+using Unity.VisualScripting;
+using UnityEngine;
+
+public class GameManager2D : NetworkBehaviour
+{
+    public Dictionary<string, Card> deckDictionary;
+    public List<Card> cardDeck = new List<Card>();
+    [HideInInspector] public List<string> cardIdDeck;
+    public int cardsPerPlayer = 2;
+    [HideInInspector] public Player2D localPlayer;
+
+    public int trickNumber;
+    public List<Player2D> playerOrder;
+    [SyncVar] public int turnNumber;
+
+    [SerializeField] private TextMeshProUGUI trickNumberText;
+
+    // TODO: UI and Card positions need to be ordered the same way, fix this annoyance using a new class
+    [SerializeField] public List<Transform> playerUIPositions;
+    [SerializeField] public List<Transform> playedCardPositions;
+
+    // TODO: make start button only available to the host
+
+    public void StartGame()
+    {
+        if (isServer)
+        {
+            SetupDecks();
+            RpcSetupDecks();
+
+            // set an order to the players
+            playerOrder = new List<Player2D>();
+            List<GameObject> players = new List<GameObject>();
+            foreach (Player2D player in PlayerSetup2D.playerList)
+            {
+                playerOrder.Add(player);
+                players.Add(player.gameObject);
+            }
+            // also move player UIs to correct places
+            SetPlayerUI();
+            RpcSetPlayerOrder(players);
+
+            
+            StartRound();
+        }
+    }
+
+        public void StartRound()
+    {
+        if (isServer)
+        {
+            // TODO: make sure there are 4 players in the lobby
+            // Shouldn't ever happen once game is done
+            if (PlayerSetup2D.playerList.Count > cardDeck.Count * cardsPerPlayer)
+            {
+                Debug.LogError("Not enough cards for the players!");
+            }
+
+
+
+            // deal the hands
+            List<string> tempCardIdDeck = new List<string>(cardIdDeck);
+            foreach (Player2D player in playerOrder)
+            {
+                List<string> tempHand = new List<string>();
+                for (int i = 0; i < cardsPerPlayer; i++)
+                {
+                    int cardIndex = Random.Range(0,tempCardIdDeck.Count);
+                    tempHand.Add(tempCardIdDeck[cardIndex]);
+                    tempCardIdDeck.RemoveAt(cardIndex);
+                }
+
+                player.GetComponent<PlayerInventory2D>().ChangeHand(tempHand);
+                player.GetComponent<PlayerInventory2D>().RpcChangeHand(tempHand);
+            }
+
+            // start the trick
+            // loop 0 is the trick choosing part
+            turnNumber = 0;
+            int newTrickNumber = 0;
+            DisplayTrickNumber(newTrickNumber);
+            RpcDisplayTrickNumber(newTrickNumber);
+
+            playerOrder[turnNumber].GetComponent<Player2D>().TurnStart();
+            playerOrder[turnNumber].GetComponent<Player2D>().RpcTurnStart();
+        }
+    }
+
+    [ClientRpc]
+    private void RpcSetupDecks()
+    {
+        if (isServer) {return;}
+
+        SetupDecks();
+    }
+
+    [ClientRpc]
+    private void RpcSetPlayerOrder(List<GameObject> players)
+    {
+        if (isServer) {return;}
+
+        foreach(GameObject player in players)
+        {
+            playerOrder.Add(player.GetComponent<Player2D>());
+        }
+
+        SetPlayerUI();
+    }
+
+    private void SetupDecks()
+    {
+        // setup the decks
+        foreach (Card card in cardDeck)
+        {
+            string cardId = card.cardValue.ToString() + card.cardSuit;
+            cardIdDeck.Add(cardId);
+        }
+        deckDictionary = new Dictionary<string, Card>();
+        for (int i = 0; i < cardIdDeck.Count; i++)
+        {
+            deckDictionary.Add(cardIdDeck[i], cardDeck[i]);
+        }
+    }
+
+
+
+    private void DisplayTrickNumber(int newTrickNumber)
+    {
+        trickNumber = newTrickNumber;
+        if (trickNumber == 0)
+        {
+            trickNumberText.text = "Bidding";
+        } 
+        else if (trickNumber == -1)
+        {
+            trickNumberText.text = "In Between Rounds";
+        }
+        else
+        {
+            trickNumberText.text = "Trick Number: " + trickNumber.ToString();
+        }
+    }
+
+    [ClientRpc]
+    private void RpcDisplayTrickNumber(int newTrickNumber)
+    {
+        if (isServer) {return;}
+
+        DisplayTrickNumber(newTrickNumber);
+    }
+
+    private void SetPlayerUI()
+    {
+        int canvasIndex = 0;
+        foreach (Player2D player in playerOrder)
+        {
+            player.playerUI.SetParent(playerUIPositions[canvasIndex]);
+            player.playerUI.position = playerUIPositions[canvasIndex].position;
+            player.playerUI.rotation = playerUIPositions[canvasIndex].rotation;
+            
+            canvasIndex += 1;
+        }
+    }
+
+    // should only be called by local player
+    [ClientCallback]
+    public void EndPlayerTurn()
+    {
+        Debug.Log("Pressed End Turn");
+        localPlayer.CalculateActions();
+    }
+
+    // should only be called by server
+    [ServerCallback]
+    public void CalculateNextPlayer()
+    {
+        if (turnNumber < playerOrder.Count - 1)
+        {
+            turnNumber += 1;
+        }
+        else
+        {
+            // that was the last turn
+            if (trickNumber != 0)
+            {
+                // TODO: decide winner and reorder if it wasn't the last round
+            }
+            // check if it was the last round
+            if (trickNumber == cardsPerPlayer)
+            {
+                DisplayTrickNumber(-1);
+                RpcDisplayTrickNumber(-1);
+
+                // TODO: calculate points based on player bets
+            }
+            else
+            {
+                turnNumber = 0;
+                int newTrickNumber = trickNumber;
+                DisplayTrickNumber(newTrickNumber + 1);
+                RpcDisplayTrickNumber(newTrickNumber + 1);
+            }
+        }
+
+        playerOrder[turnNumber].GetComponent<Player2D>().TurnStart();
+        playerOrder[turnNumber].GetComponent<Player2D>().RpcTurnStart();
+    }
+}
