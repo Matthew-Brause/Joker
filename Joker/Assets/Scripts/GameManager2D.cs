@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Mirror;
 using Steamworks;
 using TMPro;
@@ -17,11 +18,14 @@ public class GameManager2D : NetworkBehaviour
     public int trickNumber;
     public List<Player2D> playerOrder;
     [SyncVar] public int turnNumber;
+    public int playerStarted;
+
 
     [SerializeField] private TextMeshProUGUI trickNumberText;
 
     // TODO: UI and Card positions need to be ordered the same way, fix this annoyance using a new class
     [SerializeField] public List<Transform> playerUIPositions;
+    public Transform localPlayerHandPosition;
     [SerializeField] public List<Transform> playedCardPositions;
 
     // TODO: make start button only available to the host
@@ -41,10 +45,8 @@ public class GameManager2D : NetworkBehaviour
                 playerOrder.Add(player);
                 players.Add(player.gameObject);
             }
-            // also move player UIs to correct places
-            SetPlayerUI();
+            SetPlayerOrder(players);
             RpcSetPlayerOrder(players);
-
             
             StartRound();
         }
@@ -99,17 +101,38 @@ public class GameManager2D : NetworkBehaviour
         SetupDecks();
     }
 
+    // [Command]
+    // private void CmdSetPlayerOrder(List<GameObject> players)
+    // {
+    //     SetPlayerOrder(players);
+    //     RpcSetPlayerOrder(players);
+    // }
+
+    private void SetPlayerOrder(List<GameObject> players)
+    {
+        playerOrder = new List<Player2D>();
+        for (int i = 0; i < players.Count; i++)
+        {
+            // find who the local player is
+            if (players[i].GetComponent<Player2D>() == localPlayer)
+            {
+                // add players to the list after local player
+                for (int j = 0; j < players.Count; j++)
+                {
+                    Player2D player = players[(i+j)%players.Count].GetComponent<Player2D>();
+                    playerOrder.Add(player);
+                }
+            }
+        }
+        SetPlayerUI();
+    }
+
     [ClientRpc]
     private void RpcSetPlayerOrder(List<GameObject> players)
     {
         if (isServer) {return;}
 
-        foreach(GameObject player in players)
-        {
-            playerOrder.Add(player.GetComponent<Player2D>());
-        }
-
-        SetPlayerUI();
+        SetPlayerOrder(players);
     }
 
     private void SetupDecks()
@@ -171,7 +194,6 @@ public class GameManager2D : NetworkBehaviour
     [ClientCallback]
     public void EndPlayerTurn()
     {
-        Debug.Log("Pressed End Turn");
         localPlayer.CalculateActions();
     }
 
@@ -189,6 +211,8 @@ public class GameManager2D : NetworkBehaviour
             if (trickNumber != 0)
             {
                 // TODO: decide winner and reorder if it wasn't the last round
+
+                
             }
             // check if it was the last round
             if (trickNumber == cardsPerPlayer)
@@ -207,7 +231,18 @@ public class GameManager2D : NetworkBehaviour
             }
         }
 
-        playerOrder[turnNumber].GetComponent<Player2D>().TurnStart();
-        playerOrder[turnNumber].GetComponent<Player2D>().RpcTurnStart();
+
+        int trueIndex = (playerStarted+turnNumber)%playerOrder.Count;
+        playerOrder[trueIndex].GetComponent<Player2D>().TurnStart();
+        playerOrder[trueIndex].GetComponent<Player2D>().RpcTurnStart();
+    }
+
+    public void RemoveAllPlayedCards()
+    {
+        foreach (Player2D player in playerOrder)
+        {
+            player.RemovePlayedCard();
+            //player.RpcRemovePlayedCard();
+        }
     }
 }

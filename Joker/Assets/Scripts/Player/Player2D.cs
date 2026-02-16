@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using Mirror;
 using TMPro;
+using UnityEditor.Rendering;
 using UnityEngine;
 
 public class Player2D : NetworkBehaviour
@@ -33,22 +35,17 @@ public class Player2D : NetworkBehaviour
     [ClientCallback]
     public void CalculateActions()
     {
-        Debug.Log("Pressed End Turn");
 
         // just for safety
         if (isLocalPlayer)
         {
-            Debug.Log("isLocalPlayer");
 
             // the player is trying to end his turn, make sure it actually is his turn
             if (!playerTurn) {return;}
 
-            Debug.Log("passed player turn, " + gameManager.trickNumber.ToString());
-
             // allow the player to play a card or choose tricks...
             if (gameManager.trickNumber == 0)
             {
-                Debug.Log("trickNumber == 0");
                 // tricks was changed for the localplayer by buttons
                 CmdChooseTricks(tricksBid);
 
@@ -59,8 +56,8 @@ public class Player2D : NetworkBehaviour
                 // need to check that cardId is in the hand
                 if (inventory.hand.Contains(selectedCard))
                 {
-                    //CmdChooseCard(selectedCard);
-                    //inventory.CmdRemoveCard(selectedCard);
+                    CmdChooseCard(selectedCard);
+                    inventory.CmdRemoveCard(selectedCard);
                 }
                 else
                 {
@@ -75,11 +72,46 @@ public class Player2D : NetworkBehaviour
         }
     }
 
+    private void DisplayPlayCard()
+    {
+        Card cardData = gameManager.deckDictionary[cardInPlayID];
+
+        int playerIndex = gameManager.playerOrder.IndexOf(GetComponent<Player2D>());
+        Transform ui = gameManager.playedCardPositions[playerIndex];
+
+        if (gameManager.turnNumber == 0)
+        {
+            gameManager.RemoveAllPlayedCards();
+        }
+
+        GameObject cardPrefab = GetComponent<PlayerInventory2D>().cardPrefab;
+        cardInPlay = Instantiate(cardPrefab, ui.position, ui.rotation);
+        cardInPlay.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+        
+        // the name of the card is used when the player interacts with a card
+        cardInPlay.name = cardInPlayID;
+    }
+
+    public void RemovePlayedCard()
+    {
+        if (cardInPlay != null)
+        {
+            Destroy(cardInPlay);
+        }
+    }
+
+
+    [ClientRpc]
+    public void RpcRemovePlayedCard()
+    {
+        if (isServer) {return;}
+
+        RemovePlayedCard();
+    }
 
     [Command]
     private void CmdChooseTricks(int trickAmount)
     {
-        Debug.Log("CmdChooseTricks");
         tricksBid = trickAmount;
         DisplayTricks();
         RpcChooseTricks(trickAmount);
@@ -88,7 +120,6 @@ public class Player2D : NetworkBehaviour
     [ClientRpc]
     private void RpcChooseTricks(int trickAmount)
     {
-        Debug.Log("RpcChooseTricks");
         if (isServer) {return;}
 
         tricksBid = trickAmount;
@@ -97,26 +128,25 @@ public class Player2D : NetworkBehaviour
 
     public void DisplayTricks()
     {
-        Debug.Log("DisplayTricks");
         trickText.text = "Tricks Bid: " + tricksBid.ToString();
     }
 
-    // [Command]
-    // private void CmdChooseCard(string cardId)
-    // {
-    //     cardInPlayID = cardId;
-    //     DisplayPlayCard();
-    //     RpcChooseCard(cardId);
-    // }
+    [Command]
+    private void CmdChooseCard(string cardId)
+    {
+        cardInPlayID = cardId;
+        DisplayPlayCard();
+        RpcChooseCard(cardId);
+    }
 
-    // [ClientRpc]
-    // private void RpcChooseCard(string cardId)
-    // {
-    //     if (isServer) {return;}
+    [ClientRpc]
+    private void RpcChooseCard(string cardId)
+    {
+        if (isServer) {return;}
 
-    //     cardInPlayID = cardId;
-    //     DisplayPlayCard();
-    // }
+        cardInPlayID = cardId;
+        DisplayPlayCard();
+    }
 
     private void TurnEnd()
     {

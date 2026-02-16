@@ -203,7 +203,6 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   gameManager: {fileID: 0}
-  playerUICanvas: {fileID: 0}
 --- !u!114 &7570498744365215264
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -245,7 +244,9 @@ MonoBehaviour:
   syncInterval: 0
   hand: []
   gameManager: {fileID: 0}
-  cardPrefab: {fileID: 0}
+  cardPrefab: {fileID: 3806123581431612524, guid: afd6e30200b97ab48a40c3a9c311c549,
+    type: 3}
+  cardSpacing: 1.1
 --- !u!1 &4926942957256853065
 GameObject:
   m_ObjectHideFlags: 0

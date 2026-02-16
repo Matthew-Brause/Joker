@@ -9,7 +9,6 @@ public class PlayerSetup2D : NetworkBehaviour
 {
     public readonly static List<Player2D> playerList = new List<Player2D>();
     [HideInInspector] public GameManager2D gameManager;
-    public Transform playerUICanvas;
 
     // Start is called before the first frame update
     void Start()
