@@ -20,6 +20,10 @@ public class GameManager2D : NetworkBehaviour
     [SyncVar] public int turnNumber;
     public int playerStarted;
 
+    public string trumpCard;
+    public string initialCard;
+    public List<string> trickCards;
+    public int roundMultiplyer; // If a joker is the trump suit, the first bidder can choose to have the hands reshuffled at +1 round mult
 
     [SerializeField] private TextMeshProUGUI trickNumberText;
 
@@ -80,6 +84,17 @@ public class GameManager2D : NetworkBehaviour
                 player.GetComponent<PlayerInventory2D>().ChangeHand(tempHand);
                 player.GetComponent<PlayerInventory2D>().RpcChangeHand(tempHand);
             }
+
+
+            // determine the trump card
+            // TODO show the trump card
+            if (tempCardIdDeck.Count > 0)
+            {
+                int cardIndex = Random.Range(0,tempCardIdDeck.Count);
+                trumpCard = tempCardIdDeck[cardIndex];
+            }
+            
+            
 
             // start the trick
             // loop 0 is the trick choosing part
@@ -210,9 +225,21 @@ public class GameManager2D : NetworkBehaviour
             // that was the last turn
             if (trickNumber != 0)
             {
-                // TODO: decide winner and reorder if it wasn't the last round
+                // decide winner and reorder if it wasn't the last round
+                string bestCard = trickCards[0];
+                int bestCardPosition = 0;
+                for (int i = 1; i < trickCards.Count; i++)
+                {
+                    if (IsCardBetter(bestCard, trickCards[i]))
+                    {
+                        bestCard = trickCards[i];
+                        bestCardPosition = i;
+                    }
+                }
+                playerStarted = (playerStarted+bestCardPosition)%playerOrder.Count;
+                // TODO indicate who won the trick
 
-                
+                trickCards = new List<string>();
             }
             // check if it was the last round
             if (trickNumber == cardsPerPlayer)
@@ -244,5 +271,35 @@ public class GameManager2D : NetworkBehaviour
             player.RemovePlayedCard();
             //player.RpcRemovePlayedCard();
         }
+    }
+
+    private bool IsCardBetter(string currentCard, string newCard)
+    {
+        if (newCard[1] == 'j'){return true;} // TODO ensure this handles joker comparison after implementing them
+        // if current card is following suit
+        if (currentCard[1] == initialCard[1])
+        {
+            // if new card follows suit
+            if (newCard[1] == initialCard[1])
+            {
+                if (newCard[0] > initialCard[0]) {return true;}
+                else {return false;}
+            }
+            // if new card is trump
+            else if (newCard[1] == trumpCard[1]){return true;}
+            else {return false;}
+        }
+        // if current card is trump
+        else if (trumpCard != null && currentCard[1] == trumpCard[1])
+        {
+            if (newCard[1] == trumpCard[1])
+            {
+                if (newCard[0] > currentCard[0]) {return true;}
+                else {return false;}
+            }
+            else {return false;}
+        }
+        else if (currentCard[1] == 'j') {return false;} // left these as separate because I would look at this later and forget that I handled jokers
+        else {return false;}
     }
 }

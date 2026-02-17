@@ -135,6 +135,11 @@ public class Player2D : NetworkBehaviour
     private void CmdChooseCard(string cardId)
     {
         cardInPlayID = cardId;
+        if (gameManager.turnNumber == 0)
+        {
+            gameManager.initialCard = cardId;
+        }
+        gameManager.trickCards.Add(cardId);
         DisplayPlayCard();
         RpcChooseCard(cardId);
     }
