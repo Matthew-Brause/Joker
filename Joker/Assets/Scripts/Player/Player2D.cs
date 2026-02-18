@@ -47,7 +47,7 @@ public class Player2D : NetworkBehaviour
             if (gameManager.trickNumber == 0)
             {
                 // tricks was changed for the localplayer by buttons
-                CmdChooseTricks(tricksBid);
+                CmdChooseTricks(gameManager.currentTricksBid);
 
                 // TODO: hide the buttons for choosing tricks
             }
@@ -113,6 +113,7 @@ public class Player2D : NetworkBehaviour
     private void CmdChooseTricks(int trickAmount)
     {
         tricksBid = trickAmount;
+        gameManager.currentTricksBidTotal += trickAmount;
         DisplayTricks();
         RpcChooseTricks(trickAmount);
     }
@@ -121,8 +122,9 @@ public class Player2D : NetworkBehaviour
     private void RpcChooseTricks(int trickAmount)
     {
         if (isServer) {return;}
-
+        
         tricksBid = trickAmount;
+        gameManager.currentTricksBidTotal += trickAmount;
         DisplayTricks();
     }
 
@@ -148,8 +150,13 @@ public class Player2D : NetworkBehaviour
     private void RpcChooseCard(string cardId)
     {
         if (isServer) {return;}
+        
 
         cardInPlayID = cardId;
+        if (gameManager.turnNumber == 0)
+        {
+            gameManager.initialCard = cardId;
+        }
         DisplayPlayCard();
     }
 

@@ -5,6 +5,7 @@ using Mirror;
 using Steamworks;
 using TMPro;
 using Unity.VisualScripting;
+using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using UnityEngine;
 
 public class GameManager2D : NetworkBehaviour
@@ -18,19 +19,26 @@ public class GameManager2D : NetworkBehaviour
     public int trickNumber;
     public List<Player2D> playerOrder;
     [SyncVar] public int turnNumber;
-    public int playerStarted;
+    public int playerStarted = 0;
 
-    public string trumpCard;
+    public int currentTricksBid = 0;
+    public int currentTricksBidTotal = 0;
+
+    public string trumpCardId;
+    public GameObject trumpCard;
+    public GameObject cardPrefab;
     public string initialCard;
     public List<string> trickCards;
     public int roundMultiplyer; // If a joker is the trump suit, the first bidder can choose to have the hands reshuffled at +1 round mult
 
     [SerializeField] private TextMeshProUGUI trickNumberText;
+    [SerializeField] private TextMeshProUGUI trickBiddingText;
 
     // TODO: UI and Card positions need to be ordered the same way, fix this annoyance using a new class
     [SerializeField] public List<Transform> playerUIPositions;
     public Transform localPlayerHandPosition;
     [SerializeField] public List<Transform> playedCardPositions;
+    public Transform trumpCardPosition;
 
     // TODO: make start button only available to the host
 
@@ -56,7 +64,7 @@ public class GameManager2D : NetworkBehaviour
         }
     }
 
-        public void StartRound()
+    public void StartRound()
     {
         if (isServer)
         {
@@ -91,7 +99,9 @@ public class GameManager2D : NetworkBehaviour
             if (tempCardIdDeck.Count > 0)
             {
                 int cardIndex = Random.Range(0,tempCardIdDeck.Count);
-                trumpCard = tempCardIdDeck[cardIndex];
+                string tempTrumpCardId = tempCardIdDeck[cardIndex];
+                SetTrumpCard(tempTrumpCardId);
+                RpcSetTrumpCard(tempTrumpCardId);
             }
             
             
@@ -108,13 +118,7 @@ public class GameManager2D : NetworkBehaviour
         }
     }
 
-    [ClientRpc]
-    private void RpcSetupDecks()
-    {
-        if (isServer) {return;}
 
-        SetupDecks();
-    }
 
     // [Command]
     // private void CmdSetPlayerOrder(List<GameObject> players)
@@ -177,11 +181,29 @@ public class GameManager2D : NetworkBehaviour
         else if (trickNumber == -1)
         {
             trickNumberText.text = "In Between Rounds";
+            currentTricksBidTotal = 0;
         }
         else
         {
             trickNumberText.text = "Trick Number: " + trickNumber.ToString();
         }
+    }
+
+    private void DisplayTrumpCard()
+    {
+        if (trumpCard != null)
+        {
+            Destroy(trumpCard);
+        } 
+        Card cardData = deckDictionary[trumpCardId];
+
+        Transform ui = trumpCardPosition;
+
+        trumpCard = Instantiate(cardPrefab, ui.position, ui.rotation);
+        trumpCard.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+        
+        // the name of the card is used when the player interacts with a card
+        trumpCard.name = trumpCardId;
     }
 
     [ClientRpc]
@@ -209,6 +231,14 @@ public class GameManager2D : NetworkBehaviour
     [ClientCallback]
     public void EndPlayerTurn()
     {
+        if (trickNumber == 0 && turnNumber == playerOrder.Count-1)
+        {
+            if (currentTricksBidTotal == cardsPerPlayer) 
+            {
+                Debug.Log("Invalid Trick Choice");
+                return;
+            }
+        } 
         localPlayer.CalculateActions();
     }
 
@@ -241,12 +271,14 @@ public class GameManager2D : NetworkBehaviour
 
                 trickCards = new List<string>();
             }
-            // check if it was the last round
+            // check if it was the last trick
             if (trickNumber == cardsPerPlayer)
             {
                 DisplayTrickNumber(-1);
                 RpcDisplayTrickNumber(-1);
 
+                playerStarted = 0;
+                // TODO handle new person being dealer
                 // TODO: calculate points based on player bets
             }
             else
@@ -286,13 +318,13 @@ public class GameManager2D : NetworkBehaviour
                 else {return false;}
             }
             // if new card is trump
-            else if (newCard[1] == trumpCard[1]){return true;}
+            else if (newCard[1] == trumpCardId[1]){return true;}
             else {return false;}
         }
         // if current card is trump
-        else if (trumpCard != null && currentCard[1] == trumpCard[1])
+        else if (trumpCardId != null && currentCard[1] == trumpCardId[1])
         {
-            if (newCard[1] == trumpCard[1])
+            if (newCard[1] == trumpCardId[1])
             {
                 if (newCard[0] > currentCard[0]) {return true;}
                 else {return false;}
@@ -302,4 +334,55 @@ public class GameManager2D : NetworkBehaviour
         else if (currentCard[1] == 'j') {return false;} // left these as separate because I would look at this later and forget that I handled jokers
         else {return false;}
     }
+
+    [ClientCallback]
+    public void PlusTrickBid()
+    {        
+        if (currentTricksBid < cardsPerPlayer)
+        {
+            currentTricksBid++;
+            DisplayTricksBid();
+        }
+    }
+
+    [ClientCallback]
+    public void MinusTrickBid()
+    {
+        // TODO prevent last player from fucking the trick total
+        if (currentTricksBid > 0)
+        {
+            currentTricksBid--;
+            DisplayTricksBid();
+        }
+        
+    }
+
+    public void DisplayTricksBid()
+    {
+        trickBiddingText.text = currentTricksBid.ToString();
+    }
+
+    private void SetTrumpCard(string cardId)
+    {
+        trumpCardId = cardId;
+        DisplayTrumpCard();
+    }
+
+    [ClientRpc]
+    private void RpcSetTrumpCard(string cardId)
+    {
+        if (isServer) {return;}
+        
+        SetTrumpCard(cardId);
+    }
+
+    [ClientRpc]
+    private void RpcSetupDecks()
+    {
+        if (isServer) {return;}
+
+        SetupDecks();
+    }
 }
+
+
