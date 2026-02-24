@@ -56,13 +56,25 @@ public class Player2D : NetworkBehaviour
                 // need to check that cardId is in the hand
                 if (inventory.hand.Contains(selectedCard))
                 {
-                    
-                    CmdChooseCard(selectedCard);
-                    inventory.CmdRemoveCard(selectedCard);
+                    if (gameManager.turnNumber == 0)
+                    {
+                        CmdChooseCard(selectedCard);
+                        inventory.CmdRemoveCard(selectedCard);                        
+                    }
+                    else if (inventory.getValidCards().Contains(selectedCard))
+                    {
+                        CmdChooseCard(selectedCard);
+                        inventory.CmdRemoveCard(selectedCard);
+                    }
+                    else
+                    {
+                        Debug.Log("Invalid Card Choice!");
+                        return;
+                    }
                 }
                 else
                 {
-                    Debug.Log("Invalid Card Choice!");
+                    Debug.Log("Impossible Card Choice!");
                     return;
                 }
                 
@@ -163,6 +175,8 @@ public class Player2D : NetworkBehaviour
         if (gameManager.turnNumber == 0)
         {
             gameManager.initialCard = cardId;
+            gameManager.initialCardSuit = cardId[3];
+            gameManager.initialCardValue = int.Parse(cardId.Substring(0,2));
         }
         DisplayPlayCard();
     }

@@ -58,6 +58,53 @@ public class PlayerInventory2D : NetworkBehaviour
         }
     }
 
+    [ClientCallback]
+    public List<string> getValidCards()
+    {
+        List<string> validCards = new List<string>();
+
+        bool canFollow = false;
+        // check if hand can follow suit
+        foreach (string cardId in hand)
+        {
+            if (cardId[3] == gameManager.initialCardSuit)
+            {
+                canFollow = true;
+                validCards.Add(cardId);
+            }
+            else if (cardId[3] == 'j')
+            {
+                validCards.Add(cardId);
+            }
+        }
+        if (canFollow)
+        {
+            return validCards;
+        }
+
+        // must trump because you can't follow suit
+        if (gameManager.trumpCardId != null)
+        {
+            bool canTrump = false;
+            // check if hand can trump
+            foreach (string cardId in hand)
+            {
+                if (cardId[3] == gameManager.trumpCardId[3])
+                {
+                    canTrump = true;
+                    validCards.Add(cardId);
+                }
+            }
+            if (canTrump)
+            {
+                return validCards;
+            }
+        }
+
+        // can't follow and no trumps so entire hand is valid
+        return hand;
+    }
+
     [Command]    
     public void CmdRemoveCard(string cardId)
     {

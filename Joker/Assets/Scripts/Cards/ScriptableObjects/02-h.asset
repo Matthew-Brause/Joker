@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f90459562bc702b46b040db8391c4f3f, type: 3}
-  m_Name: 3h
+  m_Name: 02-h
   m_EditorClassIdentifier: 
-  cardValue: 3
+  cardValue: 2
   cardSuit: h
-  cardArt: {fileID: 21300000, guid: afc33674693c6d24fa525252ba31ae08, type: 3}
+  cardArt: {fileID: 21300000, guid: 1756de90be05e77489fd476232ad8e65, type: 3}
