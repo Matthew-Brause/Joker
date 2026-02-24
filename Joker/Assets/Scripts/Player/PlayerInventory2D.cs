@@ -21,6 +21,43 @@ public class PlayerInventory2D : NetworkBehaviour
         gameManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager2D>();
     }
 
+    [ClientCallback]
+    private void DisplayHand()
+    {
+        // clear the previous cards
+        if (cardsInHand.Count > 0)
+        {
+            foreach (GameObject card in cardsInHand)
+            {
+                Destroy(card);
+            }
+        }
+        cardsInHand = new List<GameObject>();
+        
+        
+        int index = 0;
+        foreach (string cardId in hand)
+        {
+            Card cardData = gameManager.deckDictionary[cardId];
+
+            // int playerIndex = gameManager.playerOrder.IndexOf(GetComponent<Player2D>());
+            // Transform ui = gameManager.playerUIPositions[playerIndex];
+            Transform ui = gameManager.localPlayerHandPosition;
+
+            GameObject card = Instantiate(cardPrefab, ui.position, ui.rotation);
+            card.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+            
+            // the name of the card is used when the player picks the card
+            card.name = cardId;
+            
+            // space the cards
+            card.transform.position = card.transform.position + card.transform.right * cardSpacing * index;
+            index += 1;
+
+            cardsInHand.Add(card);
+        }
+    }
+
     [Command]    
     public void CmdRemoveCard(string cardId)
     {
@@ -65,43 +102,6 @@ public class PlayerInventory2D : NetworkBehaviour
         if (isLocalPlayer)
         {
             DisplayHand();
-        }
-    }
-
-        [ClientCallback]
-    private void DisplayHand()
-    {
-        // clear the previous cards
-        if (cardsInHand.Count > 0)
-        {
-            foreach (GameObject card in cardsInHand)
-            {
-                Destroy(card);
-            }
-        }
-        cardsInHand = new List<GameObject>();
-        
-        
-        int index = 0;
-        foreach (string cardId in hand)
-        {
-            Card cardData = gameManager.deckDictionary[cardId];
-
-            // int playerIndex = gameManager.playerOrder.IndexOf(GetComponent<Player2D>());
-            // Transform ui = gameManager.playerUIPositions[playerIndex];
-            Transform ui = gameManager.localPlayerHandPosition;
-
-            GameObject card = Instantiate(cardPrefab, ui.position, ui.rotation);
-            card.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
-            
-            // the name of the card is used when the player picks the card
-            card.name = cardId;
-            
-            // space the cards
-            card.transform.position = card.transform.position + card.transform.right * cardSpacing * index;
-            index += 1;
-
-            cardsInHand.Add(card);
         }
     }
 }

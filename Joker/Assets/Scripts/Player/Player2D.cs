@@ -56,6 +56,7 @@ public class Player2D : NetworkBehaviour
                 // need to check that cardId is in the hand
                 if (inventory.hand.Contains(selectedCard))
                 {
+                    
                     CmdChooseCard(selectedCard);
                     inventory.CmdRemoveCard(selectedCard);
                 }
@@ -74,7 +75,7 @@ public class Player2D : NetworkBehaviour
 
     private void DisplayPlayCard()
     {
-        Card cardData = gameManager.deckDictionary[cardInPlayID];
+        Card cardData = gameManager.deckDictionary[cardInPlayID.Substring(0,4)]; // TODO this line is might lead to possible bugs make sure it isn't
 
         int playerIndex = gameManager.playerOrder.IndexOf(GetComponent<Player2D>());
         Transform ui = gameManager.playedCardPositions[playerIndex];
@@ -140,6 +141,12 @@ public class Player2D : NetworkBehaviour
         if (gameManager.turnNumber == 0)
         {
             gameManager.initialCard = cardId;
+            gameManager.initialCardSuit = cardId[3];
+            gameManager.initialCardValue = int.Parse(cardId.Substring(0,2));
+        }
+        else
+        {
+            // TODO stop player from picking illegal card
         }
         gameManager.trickCards.Add(cardId);
         DisplayPlayCard();

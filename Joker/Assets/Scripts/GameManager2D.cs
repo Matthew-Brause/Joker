@@ -28,6 +28,8 @@ public class GameManager2D : NetworkBehaviour
     public GameObject trumpCard;
     public GameObject cardPrefab;
     public string initialCard;
+    public char initialCardSuit;
+    public int initialCardValue;
     public List<string> trickCards;
     public int roundMultiplyer; // If a joker is the trump suit, the first bidder can choose to have the hands reshuffled at +1 round mult
 
@@ -159,7 +161,7 @@ public class GameManager2D : NetworkBehaviour
         // setup the decks
         foreach (Card card in cardDeck)
         {
-            string cardId = card.cardValue.ToString() + card.cardSuit;
+            string cardId = card.cardValue.ToString("D2") + "-" + card.cardSuit;
             cardIdDeck.Add(cardId);
         }
         deckDictionary = new Dictionary<string, Card>();
@@ -307,32 +309,67 @@ public class GameManager2D : NetworkBehaviour
 
     private bool IsCardBetter(string currentCard, string newCard)
     {
-        if (newCard[1] == 'j'){return true;} // TODO ensure this handles joker comparison after implementing them
+        int currentCardValue = int.Parse(currentCard.Substring(0,2));
+        char currentCardSuit = currentCard[3];
+        int newCardValue = int.Parse(newCard.Substring(0,2));
+        char newCardSuit = newCard[3];
+        if (newCardSuit == 'j') 
+        {
+            
+            return true; // TODO ensure this handles joker comparison after implementing them
+        } 
         // if current card is following suit
-        if (currentCard[1] == initialCard[1])
+        if (currentCardSuit == initialCardSuit)
         {
             // if new card follows suit
-            if (newCard[1] == initialCard[1])
+            if (newCardSuit == initialCardSuit)
             {
-                if (newCard[0] > initialCard[0]) {return true;}
-                else {return false;}
+                if (newCardValue > currentCardValue) 
+                {
+                    return true;
+                }
+                else 
+                {
+                    return false;
+                }
             }
             // if new card is trump
-            else if (newCard[1] == trumpCardId[1]){return true;}
-            else {return false;}
+            else if (newCardSuit == trumpCardId[3])
+            {
+                return true;
+            }
+            else 
+            {
+                return false;
+            }
         }
         // if current card is trump
-        else if (trumpCardId != null && currentCard[1] == trumpCardId[1])
+        else if (trumpCardId != null && currentCardSuit == trumpCardId[3])
         {
-            if (newCard[1] == trumpCardId[1])
+            if (newCardSuit == trumpCardId[3])
             {
-                if (newCard[0] > currentCard[0]) {return true;}
-                else {return false;}
+                if (newCardValue > currentCardValue) 
+                {
+                    return true;
+                }
+                else 
+                {
+                    return false;
+                }
             }
-            else {return false;}
+            else 
+            {
+                return false;
+            }
         }
-        else if (currentCard[1] == 'j') {return false;} // left these as separate because I would look at this later and forget that I handled jokers
-        else {return false;}
+        else if (currentCardSuit == 'j') 
+        {
+            return false; // left these as separate because I would look at this later and forget that I handled jokers
+        } 
+        else 
+        {
+            return false;
+        }
     }
 
     [ClientCallback]
