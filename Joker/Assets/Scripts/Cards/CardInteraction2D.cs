@@ -5,10 +5,12 @@ using UnityEngine;
 public class CardInteraction2D : MonoBehaviour
 {
     private GameManager2D gameManager;
+    [SerializeField] private GameObject highlight;
 
     private void Start()
     {
         gameManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager2D>();
+        SetHighlightCard(false);
     }
     
 
@@ -19,7 +21,12 @@ public class CardInteraction2D : MonoBehaviour
         {
             string cardId = this.transform.name;
             
-            gameManager.localPlayer.selectedCard = cardId;
+            gameManager.localPlayer.SetSelectedCard(cardId, this);
         }
+    }
+
+    public void SetHighlightCard(bool enable)
+    {
+        highlight.SetActive(enable);
     }
 }

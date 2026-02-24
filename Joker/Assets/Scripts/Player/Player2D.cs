@@ -14,7 +14,8 @@ public class Player2D : NetworkBehaviour
     [SyncVar] public int tricksWon;
     public string cardInPlayID;
     public GameObject cardInPlay;
-    public string selectedCard;
+    public string selectedCardId;
+    public CardInteraction2D selectedCardInteraction;
     
     [HideInInspector] public GameManager2D gameManager;
     private PlayerInventory2D inventory;
@@ -54,17 +55,17 @@ public class Player2D : NetworkBehaviour
             else
             {
                 // need to check that cardId is in the hand
-                if (inventory.hand.Contains(selectedCard))
+                if (inventory.hand.Contains(selectedCardId))
                 {
                     if (gameManager.turnNumber == 0)
                     {
-                        CmdChooseCard(selectedCard);
-                        inventory.CmdRemoveCard(selectedCard);                        
+                        CmdChooseCard(selectedCardId);
+                        inventory.CmdRemoveCard(selectedCardId);                        
                     }
-                    else if (inventory.getValidCards().Contains(selectedCard))
+                    else if (inventory.getValidCards().Contains(selectedCardId))
                     {
-                        CmdChooseCard(selectedCard);
-                        inventory.CmdRemoveCard(selectedCard);
+                        CmdChooseCard(selectedCardId);
+                        inventory.CmdRemoveCard(selectedCardId);
                     }
                     else
                     {
@@ -103,6 +104,23 @@ public class Player2D : NetworkBehaviour
         
         // the name of the card is used when the player interacts with a card
         cardInPlay.name = cardInPlayID;
+    }
+
+    public void SetSelectedCard(string cardId, CardInteraction2D cardInteraction)
+    {
+        if (inventory.hand.Contains(cardId))
+        {
+            // unhighlight old card
+            if (selectedCardInteraction != null)
+            {
+                selectedCardInteraction.SetHighlightCard(false);
+            }
+
+            // select and highlight new card
+            selectedCardId = cardId;
+            cardInteraction.SetHighlightCard(true);
+            selectedCardInteraction = cardInteraction;
+        }
     }
 
     public void RemovePlayedCard()
