@@ -148,13 +148,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 107342778}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 771781570}
-  m_Father: {fileID: 1004486243}
+  m_Father: {fileID: 964000247}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -774,13 +774,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 612496165}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 566312348}
-  m_Father: {fileID: 1004486243}
+  m_Father: {fileID: 964000247}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1082,7 +1082,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -470, y: -292}
+  m_AnchoredPosition: {x: -783.73, y: -292}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &913938197
@@ -1313,6 +1313,44 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 936713628}
   m_CullTransparentMesh: 1
+--- !u!1 &964000246
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 964000247}
+  m_Layer: 5
+  m_Name: TrickButtons
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &964000247
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 964000246}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 996834251}
+  - {fileID: 612496166}
+  - {fileID: 107342779}
+  m_Father: {fileID: 1004486243}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &965510936
 GameObject:
   m_ObjectHideFlags: 0
@@ -1373,12 +1411,12 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 996834250}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1004486243}
+  m_Father: {fileID: 964000247}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1614,9 +1652,7 @@ RectTransform:
   - {fileID: 142395614}
   - {fileID: 1093973211}
   - {fileID: 1526080455}
-  - {fileID: 612496166}
-  - {fileID: 107342779}
-  - {fileID: 996834251}
+  - {fileID: 964000247}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1941,23 +1977,31 @@ MonoBehaviour:
   - {fileID: 11400000, guid: aa15e877c43f3604db19ce8288fc33da, type: 2}
   - {fileID: 11400000, guid: af6d09af953d71e48a2effbe13057351, type: 2}
   - {fileID: 11400000, guid: 073d8bd992563f04c95ae31383e51c7a, type: 2}
+  - {fileID: 11400000, guid: 2be0472b227a3564b84ffc79c2fef59e, type: 2}
+  - {fileID: 11400000, guid: 5b352b0274cbed74cb159ebe9f570cdf, type: 2}
   cardIdDeck: []
-  cardsPerPlayer: 2
+  cardsPerPlayer: 3
   localPlayer: {fileID: 0}
   trickNumber: 0
   playerOrder: []
   turnNumber: 0
   playerStarted: 0
   currentTricksBid: 0
+  currentTricksBidTotal: 0
   trumpCardId: 
+  trumpSuit: 0
   trumpCard: {fileID: 0}
   cardPrefab: {fileID: 3806123581431612524, guid: afd6e30200b97ab48a40c3a9c311c549,
     type: 3}
-  initialCard: 
+  initialCardId: 
+  initialCardSuit: 0
+  initialCardValue: 0
   trickCards: []
   roundMultiplyer: 0
   trickNumberText: {fileID: 1567244883}
   trickBiddingText: {fileID: 996834252}
+  trickButtons: {fileID: 964000246}
+  endTurnButton: {fileID: 913938195}
   playerUIPositions:
   - {fileID: 965510937}
   - {fileID: 142395614}
@@ -2428,7 +2472,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1567244881}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

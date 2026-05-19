@@ -11,7 +11,7 @@ public class Player2D : NetworkBehaviour
     public bool playerTurn = false;
 
     public int tricksBid = 0;
-    [SyncVar] public int tricksWon;
+    public int tricksWon = 0;
     public string cardInPlayID;
     public GameObject cardInPlay;
     public string selectedCardId;
@@ -21,15 +21,20 @@ public class Player2D : NetworkBehaviour
     private PlayerInventory2D inventory;
 
     public Transform playerUI;
-    [SerializeField] private TextMeshProUGUI trickText;
+    [SerializeField] private TextMeshProUGUI tricksBidText;
+    [SerializeField] private TextMeshProUGUI tricksWonText;
 
     // Start is called before the first frame update
-        private void Start()
+    private void Start()
     {
         gameManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager2D>();
         inventory = GetComponent<PlayerInventory2D>();
+        tricksBidText.gameObject.SetActive(false);
+        tricksWonText.gameObject.SetActive(false);
     }
 
+
+    // TODO: reset tricks bid/won on new round start
 
 
     // should only get called by localplayer
@@ -48,21 +53,39 @@ public class Player2D : NetworkBehaviour
             if (gameManager.trickNumber == 0)
             {
                 // tricks was changed for the localplayer by buttons
-                CmdChooseTricks(gameManager.currentTricksBid);
+                if (gameManager.turnNumber == gameManager.playerOrder.Count - 1)
+                {
+                    // don't allow last player to bid invalid amount of tricks
+                    if (gameManager.currentTricksBidTotal + gameManager.currentTricksBid != gameManager.cardsPerPlayer)
+                    {
+                        CmdChooseTricks(gameManager.currentTricksBid);
+                    }
+                    else
+                    {
+                        Debug.Log("Can't bid that amount!");
+                        return;
+                    }
+                }
+                else
+                {
+                    CmdChooseTricks(gameManager.currentTricksBid);
+                }
 
-                // TODO: hide the buttons for choosing tricks
+                // hide the trick bidding buttons at end of turn
+                gameManager.DisplayTrickButtons(false);
             }
             else
             {
+                if (selectedCardId == null || selectedCardId == "") {return;}
                 // need to check that cardId is in the hand
-                if (inventory.hand.Contains(selectedCardId))
+                if (inventory.hand.Contains(selectedCardId.Substring(0,4))) // Card ID excluding joker tags (high/low/suit)
                 {
                     if (gameManager.turnNumber == 0)
                     {
                         CmdChooseCard(selectedCardId);
-                        inventory.CmdRemoveCard(selectedCardId);                        
+                        inventory.CmdRemoveCard(selectedCardId);
                     }
-                    else if (inventory.getValidCards().Contains(selectedCardId))
+                    else if (inventory.getValidCards().Contains(selectedCardId.Substring(0,4))) // Card ID excluding joker tags (high/low/suit)
                     {
                         CmdChooseCard(selectedCardId);
                         inventory.CmdRemoveCard(selectedCardId);
@@ -80,8 +103,10 @@ public class Player2D : NetworkBehaviour
                 }
                 
                 // TODO: hide the input for choosing a card
+                // we think this means that we should hide the end turn button until it's your turn
             }
 
+            gameManager.DisplayEndTurnButton(false);
             CmdTurnEnd();
         }
     }
@@ -108,7 +133,7 @@ public class Player2D : NetworkBehaviour
 
     public void SetSelectedCard(string cardId, CardInteraction2D cardInteraction)
     {
-        if (inventory.hand.Contains(cardId))
+        if (inventory.hand.Contains(cardId.Substring(0,4))) // Card ID excluding joker tags (high/low/suit)
         {
             // unhighlight old card
             if (selectedCardInteraction != null)
@@ -145,7 +170,7 @@ public class Player2D : NetworkBehaviour
     {
         tricksBid = trickAmount;
         gameManager.currentTricksBidTotal += trickAmount;
-        DisplayTricks();
+        DisplayTricksBid();
         RpcChooseTricks(trickAmount);
     }
 
@@ -156,28 +181,32 @@ public class Player2D : NetworkBehaviour
         
         tricksBid = trickAmount;
         gameManager.currentTricksBidTotal += trickAmount;
-        DisplayTricks();
+        DisplayTricksBid();
     }
 
-    public void DisplayTricks()
+    public void DisplayTricksBid()
     {
-        trickText.text = "Tricks Bid: " + tricksBid.ToString();
+        tricksBidText.text = "Tricks Bid: " + tricksBid.ToString();
+        tricksBidText.gameObject.SetActive(true);
+    }
+
+    [ClientRpc]
+    public void RpcWonTrick()
+    {
+        tricksWon += 1;
+        DisplayTricksWon();
+    }
+
+    public void DisplayTricksWon()
+    {
+        tricksWonText.text = "Tricks Won: " + tricksWon.ToString();
+        tricksWonText.gameObject.SetActive(true);
     }
 
     [Command]
     private void CmdChooseCard(string cardId)
     {
-        cardInPlayID = cardId;
-        if (gameManager.turnNumber == 0)
-        {
-            gameManager.initialCard = cardId;
-            gameManager.initialCardSuit = cardId[3];
-            gameManager.initialCardValue = int.Parse(cardId.Substring(0,2));
-        }
-        else
-        {
-            // TODO stop player from picking illegal card
-        }
+        ChooseCard(cardId);
         gameManager.trickCards.Add(cardId);
         DisplayPlayCard();
         RpcChooseCard(cardId);
@@ -188,15 +217,27 @@ public class Player2D : NetworkBehaviour
     {
         if (isServer) {return;}
         
+        ChooseCard(cardId);
 
+        DisplayPlayCard();
+    }
+
+    private void ChooseCard(string cardId)
+    {
         cardInPlayID = cardId;
         if (gameManager.turnNumber == 0)
         {
-            gameManager.initialCard = cardId;
-            gameManager.initialCardSuit = cardId[3];
-            gameManager.initialCardValue = int.Parse(cardId.Substring(0,2));
+            gameManager.initialCardId = cardId;
+            if (cardId[3] == 'j')
+            {
+                gameManager.initialCardSuit = cardId[5];
+            }
+            else
+            {
+                gameManager.initialCardSuit = cardId[3];
+            }
+            gameManager.initialCardValue = int.Parse(cardId.Substring(0,2)); // TODO currently unused
         }
-        DisplayPlayCard();
     }
 
     private void TurnEnd()
@@ -226,14 +267,16 @@ public class Player2D : NetworkBehaviour
         // TODO: add visuals when its a players turn
         playerTurn = true;
 
-        if (gameManager.trickNumber == 0)
+        if (isLocalPlayer)
         {
-            // TODO: show the buttons for tricks
+            gameManager.DisplayEndTurnButton(true);
+
+            if (gameManager.trickNumber == 0)
+            {
+                gameManager.DisplayTrickButtons(true);
+            }
         }
-        else
-        {
-            // TODO: show the field for choosing a card
-        }
+        
     }
 
     [ClientRpc]

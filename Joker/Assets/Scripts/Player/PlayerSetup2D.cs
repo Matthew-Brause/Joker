@@ -17,7 +17,6 @@ public class PlayerSetup2D : NetworkBehaviour
 
         if (!isLocalPlayer)
         {
-            //GetComponent<PlayerInteract>().enabled = false;
             this.gameObject.layer = 7;
         }
         else

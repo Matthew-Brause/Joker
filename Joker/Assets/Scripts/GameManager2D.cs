@@ -25,9 +25,10 @@ public class GameManager2D : NetworkBehaviour
     public int currentTricksBidTotal = 0;
 
     public string trumpCardId;
+    public char trumpSuit;
     public GameObject trumpCard;
     public GameObject cardPrefab;
-    public string initialCard;
+    public string initialCardId;
     public char initialCardSuit;
     public int initialCardValue;
     public List<string> trickCards;
@@ -35,6 +36,8 @@ public class GameManager2D : NetworkBehaviour
 
     [SerializeField] private TextMeshProUGUI trickNumberText;
     [SerializeField] private TextMeshProUGUI trickBiddingText;
+    [SerializeField] private GameObject trickButtons;
+    [SerializeField] private GameObject endTurnButton;
 
     // TODO: UI and Card positions need to be ordered the same way, fix this annoyance using a new class
     [SerializeField] public List<Transform> playerUIPositions;
@@ -43,6 +46,11 @@ public class GameManager2D : NetworkBehaviour
     public Transform trumpCardPosition;
 
     // TODO: make start button only available to the host
+    private void Start()
+    {
+        DisplayTrickButtons(false);
+        DisplayEndTurnButton(false);
+    }
 
     public void StartGame()
     {
@@ -77,8 +85,6 @@ public class GameManager2D : NetworkBehaviour
                 Debug.LogError("Not enough cards for the players!");
             }
 
-
-
             // deal the hands
             List<string> tempCardIdDeck = new List<string>(cardIdDeck);
             foreach (Player2D player in playerOrder)
@@ -97,7 +103,6 @@ public class GameManager2D : NetworkBehaviour
 
 
             // determine the trump card
-            // TODO show the trump card
             if (tempCardIdDeck.Count > 0)
             {
                 int cardIndex = Random.Range(0,tempCardIdDeck.Count);
@@ -105,7 +110,6 @@ public class GameManager2D : NetworkBehaviour
                 SetTrumpCard(tempTrumpCardId);
                 RpcSetTrumpCard(tempTrumpCardId);
             }
-            
             
 
             // start the trick
@@ -159,6 +163,7 @@ public class GameManager2D : NetworkBehaviour
     private void SetupDecks()
     {
         // setup the decks
+        cardIdDeck = new List<string>();
         foreach (Card card in cardDeck)
         {
             string cardId = card.cardValue.ToString("D2") + "-" + card.cardSuit;
@@ -233,6 +238,7 @@ public class GameManager2D : NetworkBehaviour
     [ClientCallback]
     public void EndPlayerTurn()
     {
+        // Stop "dealer" from bidding illegal amount
         if (trickNumber == 0 && turnNumber == playerOrder.Count-1)
         {
             if (currentTricksBidTotal == cardsPerPlayer) 
@@ -269,7 +275,8 @@ public class GameManager2D : NetworkBehaviour
                     }
                 }
                 playerStarted = (playerStarted+bestCardPosition)%playerOrder.Count;
-                // TODO indicate who won the trick
+
+                playerOrder[playerStarted].RpcWonTrick();
 
                 trickCards = new List<string>();
             }
@@ -315,9 +322,28 @@ public class GameManager2D : NetworkBehaviour
         char newCardSuit = newCard[3];
         if (newCardSuit == 'j') 
         {
-            
-            return true; // TODO ensure this handles joker comparison after implementing them
+            if (newCard[4] == 'h')
+            {
+                return true; 
+            }
+            else if (newCard[4] == 'l')
+            {
+                return false; 
+            }
+            else
+            {
+                Debug.Log("Error: Joker not high or low");
+            }
         } 
+        else if (currentCardSuit == 'j') 
+        {
+            if (currentCard[4] == 'h')
+            {
+                return false; // left these as separate because I would look at this later and forget that I handled jokers
+            }
+        } 
+
+
         // if current card is following suit
         if (currentCardSuit == initialCardSuit)
         {
@@ -334,7 +360,7 @@ public class GameManager2D : NetworkBehaviour
                 }
             }
             // if new card is trump
-            else if (newCardSuit == trumpCardId[3])
+            else if (newCardSuit == trumpSuit)
             {
                 return true;
             }
@@ -344,9 +370,9 @@ public class GameManager2D : NetworkBehaviour
             }
         }
         // if current card is trump
-        else if (trumpCardId != null && currentCardSuit == trumpCardId[3])
+        else if (currentCardSuit == trumpSuit)
         {
-            if (newCardSuit == trumpCardId[3])
+            if (newCardSuit == trumpSuit)
             {
                 if (newCardValue > currentCardValue) 
                 {
@@ -362,10 +388,6 @@ public class GameManager2D : NetworkBehaviour
                 return false;
             }
         }
-        else if (currentCardSuit == 'j') 
-        {
-            return false; // left these as separate because I would look at this later and forget that I handled jokers
-        } 
         else 
         {
             return false;
@@ -385,13 +407,16 @@ public class GameManager2D : NetworkBehaviour
     [ClientCallback]
     public void MinusTrickBid()
     {
-        // TODO prevent last player from fucking the trick total
         if (currentTricksBid > 0)
         {
             currentTricksBid--;
             DisplayTricksBid();
         }
-        
+    }
+
+    public void DisplayTrickButtons(bool enable)
+    {
+        trickButtons.SetActive(enable);
     }
 
     public void DisplayTricksBid()
@@ -399,9 +424,15 @@ public class GameManager2D : NetworkBehaviour
         trickBiddingText.text = currentTricksBid.ToString();
     }
 
+    public void DisplayEndTurnButton(bool enable)
+    {
+        endTurnButton.SetActive(enable);
+    }
+
     private void SetTrumpCard(string cardId)
     {
         trumpCardId = cardId;
+        SetTrumpSuit(trumpCardId[3]);
         DisplayTrumpCard();
     }
 
@@ -411,6 +442,19 @@ public class GameManager2D : NetworkBehaviour
         if (isServer) {return;}
         
         SetTrumpCard(cardId);
+    }
+
+    private void SetTrumpSuit(char suit)
+    {
+        trumpSuit = suit;
+    }
+
+    [ClientRpc]
+    private void RpcSetTrumpSuit(char suit)
+    {
+        if (isServer) {return;}
+        
+        SetTrumpSuit(suit);
     }
 
     [ClientRpc]

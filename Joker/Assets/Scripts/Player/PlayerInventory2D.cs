@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Mirror;
+using Mirror.BouncyCastle.Math.Field;
 using TMPro;
 using UnityEngine;
 
@@ -40,8 +41,6 @@ public class PlayerInventory2D : NetworkBehaviour
         {
             Card cardData = gameManager.deckDictionary[cardId];
 
-            // int playerIndex = gameManager.playerOrder.IndexOf(GetComponent<Player2D>());
-            // Transform ui = gameManager.playerUIPositions[playerIndex];
             Transform ui = gameManager.localPlayerHandPosition;
 
             GameObject card = Instantiate(cardPrefab, ui.position, ui.rotation);
@@ -62,6 +61,50 @@ public class PlayerInventory2D : NetworkBehaviour
     public List<string> getValidCards()
     {
         List<string> validCards = new List<string>();
+
+        // specifically handling if high joker was lead card
+        if (gameManager.initialCardId[3] == 'j')
+        {
+            if (gameManager.initialCardId[4] == 'h')
+            {
+                bool hasSuit = false;
+                string bestIdOfSuit = "";
+                int bestValOfSuit = -1;
+                // check if hand can follow suit
+                foreach (string cardId in hand)
+                {
+                    if (cardId[3] == gameManager.initialCardSuit)
+                    {
+                        hasSuit = true;
+                        int cardValue = int.Parse(cardId.Substring(0,2));
+                        if (cardValue > bestValOfSuit)
+                        {
+                            bestIdOfSuit = cardId;
+                            bestValOfSuit = cardValue;
+                        }
+                    }
+                    else if (cardId[3] == 'j')
+                    {
+                        validCards.Add(cardId);
+                    }
+                }
+
+
+                if (hasSuit)
+                {
+                    if (bestIdOfSuit == "")
+                    {
+                        Debug.Log("Error: Best card of suit is still empty somehow");
+                    }
+                    validCards.Add(bestIdOfSuit);
+                    return validCards;
+                }
+                else
+                {
+                    return hand;
+                }
+            }
+        }
 
         bool canFollow = false;
         // check if hand can follow suit
@@ -108,8 +151,8 @@ public class PlayerInventory2D : NetworkBehaviour
     [Command]    
     public void CmdRemoveCard(string cardId)
     {
-        // TODO not here but we eventually want to be able to hover over a face down trick and see what is in it
-        hand.Remove(cardId);
+        // TODO: not here but we eventually want to be able to hover over a face down trick and see what is in it
+        hand.Remove(cardId.Substring(0,4));
         if (isLocalPlayer)
         {
             DisplayHand();
@@ -123,7 +166,7 @@ public class PlayerInventory2D : NetworkBehaviour
     {
         if (isServer) {return;}
         
-        hand.Remove(cardId);
+        hand.Remove(cardId.Substring(0,4));
         if (isLocalPlayer)
         {
             DisplayHand();
