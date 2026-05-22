@@ -10,35 +10,51 @@ public class CardInteraction2D : MonoBehaviour
     [SerializeField] private GameObject jokerButtons;
     private string selectedCardId;
 
+    // TODO: BIG THING, make all cards buttons/UI instead of physical objects
+
     private void Start()
     {
         gameManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager2D>();
-        SetHighlightCard(false);
-        ShowJokerButtons(false);
         selectedCardId = this.transform.name;
-
-        // default jokers to high and spades
-        if (selectedCardId[3] == 'j')
-        {
-            selectedCardId = selectedCardId + "hs";
-            ShowJokerButtons(true);
-            // TODO: only show when card is selected (player needs to tell the card when its no longer selected)
-        }
+        ShowJokerButtons(false);
+        highlight.SetActive(false);
     }
-    
 
     private void OnMouseOver()
     {
         // TODO make hovering logic so light blue box or something around card
-        if (Input.GetMouseButtonDown(0)) 
+        if (Input.GetMouseButtonDown(0) && gameManager.trickNumber != 0) 
         {
-            gameManager.localPlayer.SetSelectedCard(selectedCardId, this);
+            if (selectedCardId[3] == 'j')
+            {
+                // reset joker defaults
+                selectedCardId = this.transform.name + "hs";
+            }
+            TrySelectCard();
         }
     }
 
-    public void SetHighlightCard(bool enable)
+    private void TrySelectCard()
     {
-        highlight.SetActive(enable);
+        gameManager.localPlayer.SetSelectedCard(selectedCardId, this);
+    }
+
+    public void SelectCard()
+    {
+        if (selectedCardId[3] == 'j')
+        {
+            ShowJokerButtons(true);
+        }
+        highlight.SetActive(true);
+    }
+
+    public void UnSelectCard()
+    {
+        if (selectedCardId[3] == 'j')
+        {
+            ShowJokerButtons(false);
+        }
+        highlight.SetActive(false);
     }
 
     public void ShowJokerButtons(bool enable)
@@ -57,7 +73,7 @@ public class CardInteraction2D : MonoBehaviour
         {
             selectedCardId = selectedCardId.Substring(0,4) + 'l' + selectedCardId[5];
         }
-        gameManager.localPlayer.SetSelectedCard(selectedCardId, this);
+        TrySelectCard();
     }
 
     public void SetJokerSuit(string suit)
@@ -65,6 +81,6 @@ public class CardInteraction2D : MonoBehaviour
         // TODO have a way of signalling to player what they have selected
         selectedCardId = selectedCardId.Substring(0,5) + suit;
 
-        gameManager.localPlayer.SetSelectedCard(selectedCardId, this);
+        TrySelectCard();
     }
 }

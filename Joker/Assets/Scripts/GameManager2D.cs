@@ -13,7 +13,9 @@ public class GameManager2D : NetworkBehaviour
     public Dictionary<string, Card> deckDictionary;
     public List<Card> cardDeck = new List<Card>();
     [HideInInspector] public List<string> cardIdDeck;
-    public int cardsPerPlayer = 2;
+    public int roundNumber;
+    [HideInInspector] public int cardsPerPlayer;
+    [HideInInspector] public List<int> cardsPerPlayerPerRound;
     [HideInInspector] public Player2D localPlayer;
 
     public int trickNumber;
@@ -33,11 +35,16 @@ public class GameManager2D : NetworkBehaviour
     public int initialCardValue;
     public List<string> trickCards;
     public int roundMultiplyer; // If a joker is the trump suit, the first bidder can choose to have the hands reshuffled at +1 round mult
+    public int currentHistPoints;
+
 
     [SerializeField] private TextMeshProUGUI trickNumberText;
     [SerializeField] private TextMeshProUGUI trickBiddingText;
+    [SerializeField] private TextMeshProUGUI trumpText;
+
     [SerializeField] private GameObject trickButtons;
     [SerializeField] private GameObject endTurnButton;
+    [SerializeField] private GameObject startGameButton;
 
     // TODO: UI and Card positions need to be ordered the same way, fix this annoyance using a new class
     [SerializeField] public List<Transform> playerUIPositions;
@@ -45,20 +52,34 @@ public class GameManager2D : NetworkBehaviour
     [SerializeField] public List<Transform> playedCardPositions;
     public Transform trumpCardPosition;
 
-    // TODO: make start button only available to the host
     private void Start()
     {
         DisplayTrickButtons(false);
         DisplayEndTurnButton(false);
+        trumpText.gameObject.SetActive(false);
+        cardsPerPlayerPerRound = new List<int>{1,2,3,4,5,6,7,8,9,9,9,9,8,7,6,5,4,3,2,1,9,9,9,9};
+
+        if (isServer)
+        {
+            DisplayStartGameButton(true);
+        }
+        else
+        {
+            DisplayStartGameButton(false);
+        }
+        SetupDecks();
+    }
+
+    private void DisplayStartGameButton(bool enable)
+    {
+        startGameButton.SetActive(enable);
     }
 
     public void StartGame()
     {
+        roundNumber = -1;
         if (isServer)
         {
-            SetupDecks();
-            RpcSetupDecks();
-
             // set an order to the players
             playerOrder = new List<Player2D>();
             List<GameObject> players = new List<GameObject>();
@@ -66,10 +87,13 @@ public class GameManager2D : NetworkBehaviour
             {
                 playerOrder.Add(player);
                 players.Add(player.gameObject);
+
+                player.SetupPlayer();
+                player.RpcSetupPlayer();
             }
             SetPlayerOrder(players);
             RpcSetPlayerOrder(players);
-            
+
             StartRound();
         }
     }
@@ -80,6 +104,10 @@ public class GameManager2D : NetworkBehaviour
         {
             // TODO: make sure there are 4 players in the lobby
             // Shouldn't ever happen once game is done
+            
+            roundNumber += 1;
+            cardsPerPlayer = cardsPerPlayerPerRound[roundNumber];
+            RpcChangeRound(roundNumber);
             if (PlayerSetup2D.playerList.Count > cardDeck.Count * cardsPerPlayer)
             {
                 Debug.LogError("Not enough cards for the players!");
@@ -110,21 +138,29 @@ public class GameManager2D : NetworkBehaviour
                 SetTrumpCard(tempTrumpCardId);
                 RpcSetTrumpCard(tempTrumpCardId);
             }
-            
 
             // start the trick
             // loop 0 is the trick choosing part
+            roundMultiplyer = 1; // TODO: have round multiplyer change with joker being trump stuff
+            currentHistPoints = -200; // TODO: have hist points change according to settings and rounds
+
             turnNumber = 0;
             int newTrickNumber = 0;
-            DisplayTrickNumber(newTrickNumber);
-            RpcDisplayTrickNumber(newTrickNumber);
+            ChangeTrickNumber(newTrickNumber);
+            RpcChangeTrickNumber(newTrickNumber);
 
             playerOrder[turnNumber].GetComponent<Player2D>().TurnStart();
             playerOrder[turnNumber].GetComponent<Player2D>().RpcTurnStart();
         }
     }
 
-
+    [ClientRpc]
+    private void RpcChangeRound(int newRoundNumber)
+    {
+        if (isServer) {return;}
+        roundNumber = newRoundNumber;
+        cardsPerPlayer = cardsPerPlayerPerRound[roundNumber];
+    }
 
     // [Command]
     // private void CmdSetPlayerOrder(List<GameObject> players)
@@ -176,26 +212,6 @@ public class GameManager2D : NetworkBehaviour
         }
     }
 
-
-
-    private void DisplayTrickNumber(int newTrickNumber)
-    {
-        trickNumber = newTrickNumber;
-        if (trickNumber == 0)
-        {
-            trickNumberText.text = "Bidding";
-        } 
-        else if (trickNumber == -1)
-        {
-            trickNumberText.text = "In Between Rounds";
-            currentTricksBidTotal = 0;
-        }
-        else
-        {
-            trickNumberText.text = "Trick Number: " + trickNumber.ToString();
-        }
-    }
-
     private void DisplayTrumpCard()
     {
         if (trumpCard != null)
@@ -211,14 +227,40 @@ public class GameManager2D : NetworkBehaviour
         
         // the name of the card is used when the player interacts with a card
         trumpCard.name = trumpCardId;
+
+        trumpText.gameObject.SetActive(true);
+    }
+
+    private void ChangeTrickNumber(int newTrickNumber)
+    {
+        trickNumber = newTrickNumber;
+        DisplayTrickNumber();
+        
+    }
+
+    private void DisplayTrickNumber()
+    {
+        if (trickNumber == 0)
+        {
+            trickNumberText.text = "Trick Bidding";
+        } 
+        else if (trickNumber == -1)
+        {
+            trickNumberText.text = "In Between Rounds";
+            currentTricksBidTotal = 0;
+        }
+        else
+        {
+            trickNumberText.text = "Trick Number: " + trickNumber.ToString();
+        }
     }
 
     [ClientRpc]
-    private void RpcDisplayTrickNumber(int newTrickNumber)
+    private void RpcChangeTrickNumber(int newTrickNumber)
     {
         if (isServer) {return;}
 
-        DisplayTrickNumber(newTrickNumber);
+        ChangeTrickNumber(newTrickNumber);
     }
 
     private void SetPlayerUI()
@@ -238,15 +280,15 @@ public class GameManager2D : NetworkBehaviour
     [ClientCallback]
     public void EndPlayerTurn()
     {
-        // Stop "dealer" from bidding illegal amount
-        if (trickNumber == 0 && turnNumber == playerOrder.Count-1)
-        {
-            if (currentTricksBidTotal == cardsPerPlayer) 
-            {
-                Debug.Log("Invalid Trick Choice");
-                return;
-            }
-        } 
+        // // Stop "dealer" from bidding illegal amount
+        // if (trickNumber == 0 && turnNumber == playerOrder.Count-1)
+        // {
+        //     if (currentTricksBidTotal == cardsPerPlayer) 
+        //     {
+        //         Debug.Log("Invalid Trick Choice");
+        //         return;
+        //     }
+        // } 
         localPlayer.CalculateActions();
     }
 
@@ -254,14 +296,15 @@ public class GameManager2D : NetworkBehaviour
     [ServerCallback]
     public void CalculateNextPlayer()
     {
+        // not the last turn in a trick/bid
         if (turnNumber < playerOrder.Count - 1)
         {
             turnNumber += 1;
         }
-        else
+        else 
         {
-            // that was the last turn
-            if (trickNumber != 0)
+            // not the bidding part and not the last trick
+            if (trickNumber != 0  && trickNumber != cardsPerPlayer)
             {
                 // decide winner and reorder if it wasn't the last round
                 string bestCard = trickCards[0];
@@ -280,22 +323,52 @@ public class GameManager2D : NetworkBehaviour
 
                 trickCards = new List<string>();
             }
+
             // check if it was the last trick
             if (trickNumber == cardsPerPlayer)
             {
-                DisplayTrickNumber(-1);
-                RpcDisplayTrickNumber(-1);
+                // TODO: copypasted code needs to be made a function
+                // decide winner and reorder if it wasn't the last round
+                string bestCard = trickCards[0];
+                int bestCardPosition = 0;
+                for (int i = 1; i < trickCards.Count; i++)
+                {
+                    if (IsCardBetter(bestCard, trickCards[i]))
+                    {
+                        bestCard = trickCards[i];
+                        bestCardPosition = i;
+                    }
+                }
+                playerStarted = (playerStarted+bestCardPosition)%playerOrder.Count;
 
+                foreach (Player2D player in playerOrder)
+                {
+                    // add tricks won to calculate points cause we avoid it on last trick
+                    if (player != playerOrder[playerStarted])
+                    {
+                        player.CalculatePoints(false, roundNumber, currentHistPoints, roundMultiplyer);
+                        player.RpcCalculatePoints(false, roundNumber, currentHistPoints, roundMultiplyer);
+                    }
+                    else
+                    {
+                        player.CalculatePoints(true, roundNumber, currentHistPoints, roundMultiplyer);
+                        player.RpcCalculatePoints(true, roundNumber, currentHistPoints, roundMultiplyer);   
+                    }
+                }
                 playerStarted = 0;
+
+                ChangeTrickNumber(-1);
+                RpcChangeTrickNumber(-1);
+
+                StartRound();
                 // TODO handle new person being dealer
-                // TODO: calculate points based on player bets
             }
             else
             {
                 turnNumber = 0;
                 int newTrickNumber = trickNumber;
-                DisplayTrickNumber(newTrickNumber + 1);
-                RpcDisplayTrickNumber(newTrickNumber + 1);
+                ChangeTrickNumber(newTrickNumber + 1);
+                RpcChangeTrickNumber(newTrickNumber + 1);
             }
         }
 
@@ -400,7 +473,7 @@ public class GameManager2D : NetworkBehaviour
         if (currentTricksBid < cardsPerPlayer)
         {
             currentTricksBid++;
-            DisplayTricksBid();
+            DisplayBiddingTricks();
         }
     }
 
@@ -410,7 +483,7 @@ public class GameManager2D : NetworkBehaviour
         if (currentTricksBid > 0)
         {
             currentTricksBid--;
-            DisplayTricksBid();
+            DisplayBiddingTricks();
         }
     }
 
@@ -419,7 +492,7 @@ public class GameManager2D : NetworkBehaviour
         trickButtons.SetActive(enable);
     }
 
-    public void DisplayTricksBid()
+    public void DisplayBiddingTricks()
     {
         trickBiddingText.text = currentTricksBid.ToString();
     }
@@ -455,14 +528,6 @@ public class GameManager2D : NetworkBehaviour
         if (isServer) {return;}
         
         SetTrumpSuit(suit);
-    }
-
-    [ClientRpc]
-    private void RpcSetupDecks()
-    {
-        if (isServer) {return;}
-
-        SetupDecks();
     }
 }
 

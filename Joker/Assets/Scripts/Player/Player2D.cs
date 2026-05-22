@@ -12,6 +12,7 @@ public class Player2D : NetworkBehaviour
 
     public int tricksBid = 0;
     public int tricksWon = 0;
+    public List<int> pointsWon;
     public string cardInPlayID;
     public GameObject cardInPlay;
     public string selectedCardId;
@@ -24,14 +25,32 @@ public class Player2D : NetworkBehaviour
     [SerializeField] private TextMeshProUGUI tricksBidText;
     [SerializeField] private TextMeshProUGUI tricksWonText;
 
-    // Start is called before the first frame update
+
     private void Start()
     {
         gameManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager2D>();
         inventory = GetComponent<PlayerInventory2D>();
-        tricksBidText.gameObject.SetActive(false);
-        tricksWonText.gameObject.SetActive(false);
+        DisplayTricksBid(false);
+        DisplayTricksWon(false);
     }
+    
+    public void SetupPlayer()
+    {
+        pointsWon = new List<int>();
+        for (int i = 0; i < gameManager.cardsPerPlayerPerRound.Count; i++)
+        {
+            pointsWon.Add(0);
+        }
+    }
+
+    [ClientRpc]
+    public void RpcSetupPlayer()
+    {
+        if (isServer) {return;}
+
+        SetupPlayer();
+    }
+    
 
 
     // TODO: reset tricks bid/won on new round start
@@ -101,9 +120,6 @@ public class Player2D : NetworkBehaviour
                     Debug.Log("Impossible Card Choice!");
                     return;
                 }
-                
-                // TODO: hide the input for choosing a card
-                // we think this means that we should hide the end turn button until it's your turn
             }
 
             gameManager.DisplayEndTurnButton(false);
@@ -126,24 +142,68 @@ public class Player2D : NetworkBehaviour
         GameObject cardPrefab = GetComponent<PlayerInventory2D>().cardPrefab;
         cardInPlay = Instantiate(cardPrefab, ui.position, ui.rotation);
         cardInPlay.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+
+        // TODO: if the card is a joker, show properties like high/low and suit
         
         // the name of the card is used when the player interacts with a card
         cardInPlay.name = cardInPlayID;
+    }
+
+    public void CalculatePoints(bool wonLastRound, int roundNumber, int currentHistPoints, int roundMultiplyer)
+    {
+        if (wonLastRound)
+        {
+            tricksWon += 1;
+        }
+
+        // TODO: add scoreboard
+        int points = 0;
+        if (tricksBid == tricksWon)
+        {
+            points = 50 + 50*tricksWon;
+            if (points != 50)
+            {
+                points = points*roundMultiplyer;
+            }
+        }
+        else if (tricksWon > 0)
+        {
+            points = 10*tricksWon*roundMultiplyer;
+        }
+        else
+        {
+            points = currentHistPoints*roundMultiplyer;
+        }
+        // problem, pointsWon is not initialized?
+        pointsWon[roundNumber] = points;
+
+        tricksBid = 0;
+        tricksWon = 0;
+        DisplayTricksBid(false);
+        DisplayTricksWon(false);
+    }
+
+    [ClientRpc]
+    public void RpcCalculatePoints(bool wonLastRound, int roundNumber, int currentHistPoints, int roundMultiplyer)
+    {
+        if (isServer) {return;}
+
+        CalculatePoints(wonLastRound, roundNumber, currentHistPoints, roundMultiplyer);
     }
 
     public void SetSelectedCard(string cardId, CardInteraction2D cardInteraction)
     {
         if (inventory.hand.Contains(cardId.Substring(0,4))) // Card ID excluding joker tags (high/low/suit)
         {
-            // unhighlight old card
+            // hide selection UI of old card
             if (selectedCardInteraction != null)
             {
-                selectedCardInteraction.SetHighlightCard(false);
+                selectedCardInteraction.UnSelectCard();
             }
 
             // select and highlight new card
             selectedCardId = cardId;
-            cardInteraction.SetHighlightCard(true);
+            cardInteraction.SelectCard();
             selectedCardInteraction = cardInteraction;
         }
     }
@@ -170,7 +230,7 @@ public class Player2D : NetworkBehaviour
     {
         tricksBid = trickAmount;
         gameManager.currentTricksBidTotal += trickAmount;
-        DisplayTricksBid();
+        DisplayTricksBid(true);
         RpcChooseTricks(trickAmount);
     }
 
@@ -181,26 +241,32 @@ public class Player2D : NetworkBehaviour
         
         tricksBid = trickAmount;
         gameManager.currentTricksBidTotal += trickAmount;
-        DisplayTricksBid();
+        DisplayTricksBid(true);
     }
 
-    public void DisplayTricksBid()
+    public void DisplayTricksBid(bool enable)
     {
-        tricksBidText.text = "Tricks Bid: " + tricksBid.ToString();
-        tricksBidText.gameObject.SetActive(true);
+        if (enable) 
+        {
+            tricksBidText.text = "Tricks Bid: " + tricksBid.ToString();
+        }
+        tricksBidText.gameObject.SetActive(enable);
     }
 
     [ClientRpc]
     public void RpcWonTrick()
     {
         tricksWon += 1;
-        DisplayTricksWon();
+        DisplayTricksWon(true);
     }
 
-    public void DisplayTricksWon()
+    public void DisplayTricksWon(bool enable)
     {
-        tricksWonText.text = "Tricks Won: " + tricksWon.ToString();
-        tricksWonText.gameObject.SetActive(true);
+        if (enable) 
+        {
+            tricksWonText.text = "Tricks Won: " + tricksWon.ToString();
+        }
+        tricksWonText.gameObject.SetActive(enable);
     }
 
     [Command]
