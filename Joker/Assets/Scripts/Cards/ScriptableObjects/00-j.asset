@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardValue: 0
   cardSuit: j
-  cardArt: {fileID: 21300000, guid: d17dc73ffc7680a4e873a560924205b1, type: 3}
+  cardArt: {fileID: 21300000, guid: 697f81fd90282dd42bc175ca6ba13c89, type: 3}

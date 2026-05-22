@@ -1623,13 +1623,42 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   cardDeck:
-  - {fileID: 11400000, guid: e4f8ed0cfe5b0d941a641450bfbb1546, type: 2}
-  - {fileID: 11400000, guid: dac2ae061fc5b0046b089b016194df5e, type: 2}
-  - {fileID: 11400000, guid: aa15e877c43f3604db19ce8288fc33da, type: 2}
-  - {fileID: 11400000, guid: af6d09af953d71e48a2effbe13057351, type: 2}
-  - {fileID: 11400000, guid: 073d8bd992563f04c95ae31383e51c7a, type: 2}
   - {fileID: 11400000, guid: 2be0472b227a3564b84ffc79c2fef59e, type: 2}
   - {fileID: 11400000, guid: 5b352b0274cbed74cb159ebe9f570cdf, type: 2}
+  - {fileID: 11400000, guid: e4f8ed0cfe5b0d941a641450bfbb1546, type: 2}
+  - {fileID: 11400000, guid: dac2ae061fc5b0046b089b016194df5e, type: 2}
+  - {fileID: 11400000, guid: 723d1c5803331da44a5c4709270568b4, type: 2}
+  - {fileID: 11400000, guid: 1e9bb1dcf49b9d44fa7c1a5287a0ebde, type: 2}
+  - {fileID: 11400000, guid: 78c7945fd17b7d9498d0f8f0d6a03638, type: 2}
+  - {fileID: 11400000, guid: 17e65fbfd8e81d54287169e1c2f65791, type: 2}
+  - {fileID: 11400000, guid: 9706c0a6cc2e08544bb315d943d053e3, type: 2}
+  - {fileID: 11400000, guid: 135c3886b8fac7c4dbd43f488206bdfa, type: 2}
+  - {fileID: 11400000, guid: 76f8f78fb0e279c4e9b284a1b1ad12bc, type: 2}
+  - {fileID: 11400000, guid: 48ea3648660dae64fb665e84cdb60925, type: 2}
+  - {fileID: 11400000, guid: 108ed162e05e675468c97d8082875473, type: 2}
+  - {fileID: 11400000, guid: 5368a45e700990843a04a294c5f72b59, type: 2}
+  - {fileID: 11400000, guid: 40e3f0148b7fea544975eebec39c905b, type: 2}
+  - {fileID: 11400000, guid: cf6bf966cb280e94e9b88b4370897e93, type: 2}
+  - {fileID: 11400000, guid: 496d8504b76facc4989c33284bd6bbcf, type: 2}
+  - {fileID: 11400000, guid: 997597e6a52341c4cb69fe1235e81565, type: 2}
+  - {fileID: 11400000, guid: 82390d6763e5698499fcec1657172d65, type: 2}
+  - {fileID: 11400000, guid: ef4ec990a62d70d48a19ab43bfc8f955, type: 2}
+  - {fileID: 11400000, guid: 2fce13e98f39aaa4983e3780a0e23069, type: 2}
+  - {fileID: 11400000, guid: 1aa2e9d17ef28a843bb1fa828ee9c426, type: 2}
+  - {fileID: 11400000, guid: c61218eb9341d3a45abf21ce20387277, type: 2}
+  - {fileID: 11400000, guid: 7461f87f43f35034fa9012d4adad0ba5, type: 2}
+  - {fileID: 11400000, guid: 626d0ba68d500bd4ca02c91a4e17fc7e, type: 2}
+  - {fileID: 11400000, guid: 5560986c911cfb24392c28b1a00b0e95, type: 2}
+  - {fileID: 11400000, guid: 5885d583139836f4ea0a5906fd3fba08, type: 2}
+  - {fileID: 11400000, guid: 94499ff3188b1a740a7c042982e9340e, type: 2}
+  - {fileID: 11400000, guid: bc9b649333bb7d74ab8d7195b053b6e8, type: 2}
+  - {fileID: 11400000, guid: 53fddc7298dc2994294150a37044cf72, type: 2}
+  - {fileID: 11400000, guid: 5bae36c31542f3449ae39d59b38806c6, type: 2}
+  - {fileID: 11400000, guid: 3dde220d163722945a98ab770bf9805e, type: 2}
+  - {fileID: 11400000, guid: 41367950388e86b4ba2f4808a9bedd9f, type: 2}
+  - {fileID: 11400000, guid: eb97da73490a8d74a9da9675cf356de0, type: 2}
+  - {fileID: 11400000, guid: 197dbf5bc9f1ab941831c4b437139e05, type: 2}
+  - {fileID: 11400000, guid: 07310c558b3048b419063addd5629ef5, type: 2}
   cardIdDeck: []
   roundNumber: 0
   cardsPerPlayer: 0
@@ -1639,6 +1668,7 @@ MonoBehaviour:
   playerOrder: []
   turnNumber: 0
   playerStarted: 0
+  roundStartingPlayer: 0
   currentTricksBid: 0
   currentTricksBidTotal: 0
   trumpCardId: 

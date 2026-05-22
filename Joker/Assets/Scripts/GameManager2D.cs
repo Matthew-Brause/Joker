@@ -21,7 +21,8 @@ public class GameManager2D : NetworkBehaviour
     public int trickNumber;
     public List<Player2D> playerOrder;
     [SyncVar] public int turnNumber;
-    public int playerStarted = 0;
+    [SyncVar] public int roundStartingPlayer;
+    public int lastPlayerWonIndex;
 
     public int currentTricksBid = 0;
     public int currentTricksBidTotal = 0;
@@ -83,14 +84,33 @@ public class GameManager2D : NetworkBehaviour
             // set an order to the players
             playerOrder = new List<Player2D>();
             List<GameObject> players = new List<GameObject>();
-            foreach (Player2D player in PlayerSetup2D.playerList)
+
+            // add the 1st player (host) always at the start
+            Player2D player = PlayerSetup2D.playerList[0];
+            playerOrder.Add(player);
+            players.Add(player.gameObject);
+            player.SetupPlayer();
+            player.RpcSetupPlayer();
+
+            // create the list of indexes corresponding to total players: e.g. {1,2,3}
+            List<int> randomizer = new List<int>();
+            for (int i = 1; i < PlayerSetup2D.playerList.Count; i++)
             {
+                randomizer.Add(i);
+            }
+
+            Shuffle(randomizer);
+            foreach (int index in randomizer)
+            {
+                player = PlayerSetup2D.playerList[index];
                 playerOrder.Add(player);
                 players.Add(player.gameObject);
-
                 player.SetupPlayer();
                 player.RpcSetupPlayer();
             }
+            roundStartingPlayer = Random.Range(1, playerOrder.Count);
+            lastPlayerWonIndex = 0;
+
             SetPlayerOrder(players);
             RpcSetPlayerOrder(players);
 
@@ -105,7 +125,14 @@ public class GameManager2D : NetworkBehaviour
             // TODO: make sure there are 4 players in the lobby
             // Shouldn't ever happen once game is done
             
+            // that was the last round
             roundNumber += 1;
+            if (roundNumber == cardsPerPlayerPerRound.Count)
+            {
+                // TODO: stop all play and just show scoreboard
+                return;
+            }
+
             cardsPerPlayer = cardsPerPlayerPerRound[roundNumber];
             RpcChangeRound(roundNumber);
             if (PlayerSetup2D.playerList.Count > cardDeck.Count * cardsPerPlayer)
@@ -144,13 +171,14 @@ public class GameManager2D : NetworkBehaviour
             roundMultiplyer = 1; // TODO: have round multiplyer change with joker being trump stuff
             currentHistPoints = -200; // TODO: have hist points change according to settings and rounds
 
-            turnNumber = 0;
-            int newTrickNumber = 0;
-            ChangeTrickNumber(newTrickNumber);
-            RpcChangeTrickNumber(newTrickNumber);
 
-            playerOrder[turnNumber].GetComponent<Player2D>().TurnStart();
-            playerOrder[turnNumber].GetComponent<Player2D>().RpcTurnStart();
+            roundStartingPlayer = (roundStartingPlayer+1)%playerOrder.Count;
+            turnNumber = 0; 
+            ChangeTrickNumber(0);
+            RpcChangeTrickNumber(0);
+
+            playerOrder[roundStartingPlayer].GetComponent<Player2D>().TurnStart();
+            playerOrder[roundStartingPlayer].GetComponent<Player2D>().RpcTurnStart();
         }
     }
 
@@ -280,15 +308,6 @@ public class GameManager2D : NetworkBehaviour
     [ClientCallback]
     public void EndPlayerTurn()
     {
-        // // Stop "dealer" from bidding illegal amount
-        // if (trickNumber == 0 && turnNumber == playerOrder.Count-1)
-        // {
-        //     if (currentTricksBidTotal == cardsPerPlayer) 
-        //     {
-        //         Debug.Log("Invalid Trick Choice");
-        //         return;
-        //     }
-        // } 
         localPlayer.CalculateActions();
     }
 
@@ -317,9 +336,9 @@ public class GameManager2D : NetworkBehaviour
                         bestCardPosition = i;
                     }
                 }
-                playerStarted = (playerStarted+bestCardPosition)%playerOrder.Count;
+                lastPlayerWonIndex = (lastPlayerWonIndex+bestCardPosition)%playerOrder.Count;
 
-                playerOrder[playerStarted].RpcWonTrick();
+                playerOrder[lastPlayerWonIndex].RpcWonTrick();
 
                 trickCards = new List<string>();
             }
@@ -339,12 +358,12 @@ public class GameManager2D : NetworkBehaviour
                         bestCardPosition = i;
                     }
                 }
-                playerStarted = (playerStarted+bestCardPosition)%playerOrder.Count;
+                lastPlayerWonIndex = (lastPlayerWonIndex+bestCardPosition)%playerOrder.Count;
 
                 foreach (Player2D player in playerOrder)
                 {
                     // add tricks won to calculate points cause we avoid it on last trick
-                    if (player != playerOrder[playerStarted])
+                    if (player != playerOrder[lastPlayerWonIndex])
                     {
                         player.CalculatePoints(false, roundNumber, currentHistPoints, roundMultiplyer);
                         player.RpcCalculatePoints(false, roundNumber, currentHistPoints, roundMultiplyer);
@@ -355,7 +374,7 @@ public class GameManager2D : NetworkBehaviour
                         player.RpcCalculatePoints(true, roundNumber, currentHistPoints, roundMultiplyer);   
                     }
                 }
-                playerStarted = 0;
+                lastPlayerWonIndex = 0;
 
                 ChangeTrickNumber(-1);
                 RpcChangeTrickNumber(-1);
@@ -366,14 +385,14 @@ public class GameManager2D : NetworkBehaviour
             else
             {
                 turnNumber = 0;
-                int newTrickNumber = trickNumber;
-                ChangeTrickNumber(newTrickNumber + 1);
-                RpcChangeTrickNumber(newTrickNumber + 1);
+                int newTrickNumber = trickNumber + 1;
+                ChangeTrickNumber(newTrickNumber);
+                RpcChangeTrickNumber(newTrickNumber);
             }
         }
 
 
-        int trueIndex = (playerStarted+turnNumber)%playerOrder.Count;
+        int trueIndex = (lastPlayerWonIndex+turnNumber)%playerOrder.Count;
         playerOrder[trueIndex].GetComponent<Player2D>().TurnStart();
         playerOrder[trueIndex].GetComponent<Player2D>().RpcTurnStart();
     }
@@ -528,6 +547,17 @@ public class GameManager2D : NetworkBehaviour
         if (isServer) {return;}
         
         SetTrumpSuit(suit);
+    }
+
+    void Shuffle<T>(List<T> list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            T temp = list[i];
+            int randomIndex = Random.Range(i, list.Count);
+            list[i] = list[randomIndex];
+            list[randomIndex] = temp;
+        }
     }
 }
 
