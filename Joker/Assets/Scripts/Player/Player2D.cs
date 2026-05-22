@@ -367,5 +367,21 @@ public class Player2D : NetworkBehaviour
 
         GiveJokerTrumpOptions();
     }
+    
+    public void GiveThreeTrumpOptions()
+    {
+        if (isLocalPlayer)
+        {
+            gameManager.DisplayThreeTrumpOptions(true);
+        }
+    }
+
+    [ClientRpc]
+    public void RpcGiveThreeTrumpOptions()
+    {
+        if (isServer) {return;}
+
+        GiveThreeTrumpOptions();
+    }
 
 }

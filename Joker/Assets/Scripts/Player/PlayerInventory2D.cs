@@ -25,6 +25,9 @@ public class PlayerInventory2D : NetworkBehaviour
     [ClientCallback]
     private void DisplayHand()
     {
+        // TODO: order the cards so that it looks nice
+
+        
         // clear the previous cards
         if (cardsInHand.Count > 0)
         {
@@ -189,6 +192,34 @@ public class PlayerInventory2D : NetworkBehaviour
         if (isServer) {return;}
 
         hand = newHand;
+        if (isLocalPlayer)
+        {
+            DisplayHand();
+        }
+    }
+
+    [ServerCallback]
+    public void AddToHand(List<string> cards)
+    {
+        foreach (string card in cards)
+        {
+            hand.Add(card);
+        }
+        if (isLocalPlayer)
+        {
+            DisplayHand();
+        }
+    }
+
+    [ClientRpc]
+    public void RpcAddToHand(List<string> cards)
+    {
+        if (isServer) {return;}
+
+        foreach (string card in cards)
+        {
+            hand.Add(card);
+        }
         if (isLocalPlayer)
         {
             DisplayHand();

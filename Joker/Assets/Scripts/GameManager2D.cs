@@ -13,30 +13,31 @@ public class GameManager2D : NetworkBehaviour
     public Dictionary<string, Card> deckDictionary;
     public List<Card> cardDeck = new List<Card>();
     [HideInInspector] public List<string> cardIdDeck;
-    public int roundNumber;
+    private List<string> ninesCardIdDeck;
+    [HideInInspector] public int roundNumber;
     [HideInInspector] public int cardsPerPlayer;
     [HideInInspector] public List<int> cardsPerPlayerPerRound;
     [HideInInspector] public Player2D localPlayer;
 
-    public int trickNumber;
-    public List<Player2D> playerOrder;
-    [SyncVar] public int turnNumber;
-    [SyncVar] public int roundStartingPlayer;
-    public int lastPlayerWonIndex;
+    [HideInInspector] public int trickNumber;
+    [HideInInspector] public List<Player2D> playerOrder;
+    [HideInInspector] [SyncVar] public int turnNumber;
+    [HideInInspector] [SyncVar] public int roundStartingPlayer;
+    [HideInInspector] public int lastPlayerWonIndex;
 
-    public int currentTricksBid = 0;
-    public int currentTricksBidTotal = 0;
+    [HideInInspector] public int currentTricksBid = 0;
+    [HideInInspector] public int currentTricksBidTotal = 0;
 
-    public string trumpCardId;
-    public char trumpSuit;
-    public GameObject trumpCard;
+    [HideInInspector] public string trumpCardId;
+    [HideInInspector] public char trumpSuit;
+    [HideInInspector] public GameObject trumpCard;
     public GameObject cardPrefab;
-    public string initialCardId;
-    public char initialCardSuit;
-    public int initialCardValue;
-    public List<string> trickCards;
-    public int roundMultiplyer; // If a joker is the trump suit, the first bidder can choose to have the hands reshuffled at +1 round mult
-    public int currentHistPoints;
+    [HideInInspector] public string initialCardId;
+    [HideInInspector] public char initialCardSuit;
+    [HideInInspector] public int initialCardValue;
+    [HideInInspector] public List<string> trickCards;
+    [HideInInspector] public int roundMultiplyer; // If a joker is the trump suit, the first bidder can choose to have the hands reshuffled at +1 round mult
+    [HideInInspector] public int currentHistPoints;
 
 
     [SerializeField] private TextMeshProUGUI trickNumberText;
@@ -47,6 +48,13 @@ public class GameManager2D : NetworkBehaviour
     [SerializeField] private GameObject endTurnButton;
     [SerializeField] private GameObject startGameButton;
     [SerializeField] private GameObject trumpJokerButtons;
+    [SerializeField] private GameObject trumpNinesButtons;
+
+    [SerializeField] private Sprite spadeSuitArt;
+    [SerializeField] private Sprite heartSuitArt;
+    [SerializeField] private Sprite diamondSuitArt;
+    [SerializeField] private Sprite clubSuitArt;
+    [SerializeField] private Sprite noneSuitArt;
 
     // TODO: UI and Card positions need to be ordered the same way, fix this annoyance using a new class
     [SerializeField] public List<Transform> playerUIPositions;
@@ -59,8 +67,9 @@ public class GameManager2D : NetworkBehaviour
         DisplayTrickButtons(false);
         DisplayEndTurnButton(false);
         DisplayJokerTrumpOptions(false);
+        DisplayThreeTrumpOptions(false);
         trumpText.gameObject.SetActive(false);
-        cardsPerPlayerPerRound = new List<int>{1,2,3,4,5,6,7,8,9,9,9,9,8,7,6,5,4,3,2,1,9,9,9,9};
+        cardsPerPlayerPerRound = new List<int>{9,9,1,2,3,4,5,6,7,8,9,9,9,9,8,7,6,5,4,3,2,1,9,9,9,9};
 
         if (isServer)
         {
@@ -152,13 +161,26 @@ public class GameManager2D : NetworkBehaviour
             ChangeTrickNumber(0);
             RpcChangeTrickNumber(0);
 
-            DealCards();
+            if (cardsPerPlayerPerRound[roundNumber] != 9)
+            {
+                DealCards();
+            }
+            else
+            {
+                DealThreeCards();
+            }
+            
         }
     }
 
     public void DisplayJokerTrumpOptions(bool enable)
     {
         trumpJokerButtons.SetActive(enable);
+    }
+
+    public void DisplayThreeTrumpOptions(bool enable)
+    {
+        trumpNinesButtons.SetActive(enable);
     }
 
     private void CheckJokerTrump(string attemptedTrumpCardId)
@@ -216,7 +238,7 @@ public class GameManager2D : NetworkBehaviour
 
 
         // determine the trump card
-        if (tempCardIdDeck.Count > 0)
+        if (tempCardIdDeck.Count > 0 && cardsPerPlayerPerRound[roundNumber] != 9)
         {
             int cardIndex = Random.Range(0,tempCardIdDeck.Count);
             string tempTrumpCardId = tempCardIdDeck[cardIndex];
@@ -225,6 +247,76 @@ public class GameManager2D : NetworkBehaviour
 
             CheckJokerTrump(tempTrumpCardId);
         }
+    }
+    
+    public void PickThreeTrumpSuit(string suit)
+    {
+        // this function should be called by a button on a localplayer's gamemanager
+
+        // hide the buttons
+        DisplayThreeTrumpOptions(false);
+        CmdPickThreeTrumpSuit(suit);
+    }
+
+    [Command(requiresAuthority = false)]
+    private void CmdPickThreeTrumpSuit(string trumpCardId)
+    {
+        // trump card id will be bogus like 00-h, 00-d, 00-c, 00-s, 00-n
+        SetTrumpCard(trumpCardId);
+        RpcSetTrumpCard(trumpCardId);
+
+        // finish dealing player ones cards
+        Player2D playerOne = playerOrder[roundStartingPlayer];
+        List<string> tempPlayerOneHand = new List<string>();
+        for (int i = 0; i < 6; i++)
+        {
+            int cardIndex = Random.Range(0,ninesCardIdDeck.Count);
+            tempPlayerOneHand.Add(ninesCardIdDeck[cardIndex]);
+            ninesCardIdDeck.RemoveAt(cardIndex);
+        }
+        playerOne.GetComponent<PlayerInventory2D>().AddToHand(tempPlayerOneHand);
+        playerOne.GetComponent<PlayerInventory2D>().RpcAddToHand(tempPlayerOneHand);
+
+        // deal the rest of the cards to other players
+        foreach (Player2D player in playerOrder)
+        {
+            if (player != playerOne)
+            {
+                List<string> tempHand = new List<string>();
+                for (int i = 0; i < cardsPerPlayer; i++)
+                {
+                    int cardIndex = Random.Range(0,ninesCardIdDeck.Count);
+                    tempHand.Add(ninesCardIdDeck[cardIndex]);
+                    ninesCardIdDeck.RemoveAt(cardIndex);
+                }
+
+                player.GetComponent<PlayerInventory2D>().ChangeHand(tempHand);
+                player.GetComponent<PlayerInventory2D>().RpcChangeHand(tempHand);                
+            }
+        }
+
+        playerOne.GetComponent<Player2D>().TurnStart();
+        playerOne.GetComponent<Player2D>().RpcTurnStart();
+    }
+
+    private void DealThreeCards()
+    {
+        // deal starting player just three cards
+        Player2D playerOne = playerOrder[roundStartingPlayer];
+        ninesCardIdDeck = new List<string>(cardIdDeck);
+        List<string> tempPlayerOneHand = new List<string>();
+        for (int i = 0; i < 3; i++)
+        {
+            int cardIndex = Random.Range(0,ninesCardIdDeck.Count);
+            tempPlayerOneHand.Add(ninesCardIdDeck[cardIndex]);
+            ninesCardIdDeck.RemoveAt(cardIndex);
+        }
+        playerOne.GetComponent<PlayerInventory2D>().ChangeHand(tempPlayerOneHand);
+        playerOne.GetComponent<PlayerInventory2D>().RpcChangeHand(tempPlayerOneHand);
+
+        // show buttons and allow to pick trump
+        playerOne.GetComponent<Player2D>().GiveThreeTrumpOptions();
+        playerOne.GetComponent<Player2D>().RpcGiveThreeTrumpOptions();
     }
 
     [ClientRpc]
@@ -291,13 +383,44 @@ public class GameManager2D : NetworkBehaviour
         {
             Destroy(trumpCard);
         } 
-        Card cardData = deckDictionary[trumpCardId];
 
         Transform ui = trumpCardPosition;
-
         trumpCard = Instantiate(cardPrefab, ui.position, ui.rotation);
-        trumpCard.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
-        
+
+        // check if the trump card is only a suit and not a real card
+        if (trumpCardId.Substring(0,2) == "00" && trumpCardId[3] != 'j')
+        {
+            if (trumpCardId[3] == 's')
+            {
+                trumpCard.GetComponent<SpriteRenderer>().sprite = spadeSuitArt;
+            }
+            else if (trumpCardId[3] == 'h')
+            {
+                trumpCard.GetComponent<SpriteRenderer>().sprite = heartSuitArt;
+            }
+            else if (trumpCardId[3] == 'd')
+            {
+                trumpCard.GetComponent<SpriteRenderer>().sprite = diamondSuitArt;
+            }
+            else if (trumpCardId[3] == 'c')
+            {
+                trumpCard.GetComponent<SpriteRenderer>().sprite = clubSuitArt;
+            }
+            else if (trumpCardId[3] == 'n')
+            {
+                trumpCard.GetComponent<SpriteRenderer>().sprite = noneSuitArt;
+            }
+            else
+            {
+                Debug.Log("Error: Called DisplayTrumpSuit with invalid suit");
+            }
+        }
+        else
+        {
+            Card cardData = deckDictionary[trumpCardId];
+            trumpCard.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+        }
+
         // the name of the card is used when the player interacts with a card
         trumpCard.name = trumpCardId;
 
@@ -579,7 +702,7 @@ public class GameManager2D : NetworkBehaviour
         
         SetTrumpCard(cardId);
     }
-
+    
     private void SetTrumpSuit(char suit)
     {
         trumpSuit = suit;
