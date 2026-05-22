@@ -46,6 +46,7 @@ public class GameManager2D : NetworkBehaviour
     [SerializeField] private GameObject trickButtons;
     [SerializeField] private GameObject endTurnButton;
     [SerializeField] private GameObject startGameButton;
+    [SerializeField] private GameObject trumpJokerButtons;
 
     // TODO: UI and Card positions need to be ordered the same way, fix this annoyance using a new class
     [SerializeField] public List<Transform> playerUIPositions;
@@ -57,6 +58,7 @@ public class GameManager2D : NetworkBehaviour
     {
         DisplayTrickButtons(false);
         DisplayEndTurnButton(false);
+        DisplayJokerTrumpOptions(false);
         trumpText.gameObject.SetActive(false);
         cardsPerPlayerPerRound = new List<int>{1,2,3,4,5,6,7,8,9,9,9,9,8,7,6,5,4,3,2,1,9,9,9,9};
 
@@ -140,45 +142,88 @@ public class GameManager2D : NetworkBehaviour
                 Debug.LogError("Not enough cards for the players!");
             }
 
-            // deal the hands
-            List<string> tempCardIdDeck = new List<string>(cardIdDeck);
-            foreach (Player2D player in playerOrder)
-            {
-                List<string> tempHand = new List<string>();
-                for (int i = 0; i < cardsPerPlayer; i++)
-                {
-                    int cardIndex = Random.Range(0,tempCardIdDeck.Count);
-                    tempHand.Add(tempCardIdDeck[cardIndex]);
-                    tempCardIdDeck.RemoveAt(cardIndex);
-                }
-
-                player.GetComponent<PlayerInventory2D>().ChangeHand(tempHand);
-                player.GetComponent<PlayerInventory2D>().RpcChangeHand(tempHand);
-            }
-
-
-            // determine the trump card
-            if (tempCardIdDeck.Count > 0)
-            {
-                int cardIndex = Random.Range(0,tempCardIdDeck.Count);
-                string tempTrumpCardId = tempCardIdDeck[cardIndex];
-                SetTrumpCard(tempTrumpCardId);
-                RpcSetTrumpCard(tempTrumpCardId);
-            }
-
             // start the trick
             // loop 0 is the trick choosing part
             roundMultiplyer = 1; // TODO: have round multiplyer change with joker being trump stuff
             currentHistPoints = -200; // TODO: have hist points change according to settings and rounds
-
 
             roundStartingPlayer = (roundStartingPlayer+1)%playerOrder.Count;
             turnNumber = 0; 
             ChangeTrickNumber(0);
             RpcChangeTrickNumber(0);
 
+            DealCards();
+        }
+    }
+
+    public void DisplayJokerTrumpOptions(bool enable)
+    {
+        trumpJokerButtons.SetActive(enable);
+    }
+
+    private void CheckJokerTrump(string attemptedTrumpCardId)
+    {
+        if (attemptedTrumpCardId[3] == 'j')
+        {
+            // give option to next player to do either no trump or double points
+            playerOrder[roundStartingPlayer].GetComponent<Player2D>().GiveJokerTrumpOptions();
+            playerOrder[roundStartingPlayer].GetComponent<Player2D>().RpcGiveJokerTrumpOptions();
+        }
+        else
+        {
             playerOrder[roundStartingPlayer].GetComponent<Player2D>().TurnStart();
             playerOrder[roundStartingPlayer].GetComponent<Player2D>().RpcTurnStart();
+        }
+    }
+
+    public void IncreaseRoundMultiplier()
+    {
+        roundMultiplyer += 1;
+
+        // hide the buttons
+        DisplayJokerTrumpOptions(false);
+
+        DealCards();
+        
+    }
+
+    public void ContinueRoundWithJokerTrump()
+    {
+        // hide the buttons
+        DisplayJokerTrumpOptions(false);
+
+        playerOrder[roundStartingPlayer].GetComponent<Player2D>().TurnStart();
+        playerOrder[roundStartingPlayer].GetComponent<Player2D>().RpcTurnStart();
+    }
+
+    private void DealCards()
+    {
+        // deal the hands
+        List<string> tempCardIdDeck = new List<string>(cardIdDeck);
+        foreach (Player2D player in playerOrder)
+        {
+            List<string> tempHand = new List<string>();
+            for (int i = 0; i < cardsPerPlayer; i++)
+            {
+                int cardIndex = Random.Range(0,tempCardIdDeck.Count);
+                tempHand.Add(tempCardIdDeck[cardIndex]);
+                tempCardIdDeck.RemoveAt(cardIndex);
+            }
+
+            player.GetComponent<PlayerInventory2D>().ChangeHand(tempHand);
+            player.GetComponent<PlayerInventory2D>().RpcChangeHand(tempHand);
+        }
+
+
+        // determine the trump card
+        if (tempCardIdDeck.Count > 0)
+        {
+            int cardIndex = Random.Range(0,tempCardIdDeck.Count);
+            string tempTrumpCardId = tempCardIdDeck[cardIndex];
+            SetTrumpCard(tempTrumpCardId);
+            RpcSetTrumpCard(tempTrumpCardId);
+
+            CheckJokerTrump(tempTrumpCardId);
         }
     }
 
@@ -390,7 +435,6 @@ public class GameManager2D : NetworkBehaviour
                 RpcChangeTrickNumber(newTrickNumber);
             }
         }
-
 
         int trueIndex = (lastPlayerWonIndex+turnNumber)%playerOrder.Count;
         playerOrder[trueIndex].GetComponent<Player2D>().TurnStart();

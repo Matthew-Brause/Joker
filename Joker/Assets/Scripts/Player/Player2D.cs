@@ -342,7 +342,6 @@ public class Player2D : NetworkBehaviour
                 gameManager.DisplayTrickButtons(true);
             }
         }
-        
     }
 
     [ClientRpc]
@@ -351,6 +350,22 @@ public class Player2D : NetworkBehaviour
         if (isServer) {return;}
 
         TurnStart();
+    }
+
+    public void GiveJokerTrumpOptions()
+    {
+        if (isLocalPlayer)
+        {
+            gameManager.DisplayJokerTrumpOptions(true);
+        }
+    }
+
+    [ClientRpc]
+    public void RpcGiveJokerTrumpOptions()
+    {
+        if (isServer) {return;}
+
+        GiveJokerTrumpOptions();
     }
 
 }
