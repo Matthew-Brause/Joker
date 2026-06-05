@@ -17,9 +17,7 @@ public class PlayerInventory2D : NetworkBehaviour
     [SerializeField] public GameObject cardPrefab;
     [SerializeField] private int maxHandSize;
 
-    //[SerializeField] private float cardSpacing = 1.0f;
-
-    private List<GameObject> cardsInHand = new List<GameObject>();
+    public List<GameObject> cardsInHand = new List<GameObject>();
 
     private void Start()
     {
@@ -27,7 +25,7 @@ public class PlayerInventory2D : NetworkBehaviour
     }
 
     [ClientCallback]
-    private void DisplayHand()
+    private void DisplayHand(bool newDeal)
     {
         // TODO: order the cards so that it looks nice
         
@@ -41,32 +39,57 @@ public class PlayerInventory2D : NetworkBehaviour
         }
         cardsInHand = new List<GameObject>();
         
-        
         // spawn the new cards
+        // TODO: its important that hand and cardsInHand have the same ordering, fix this?
         int cardIndex = 0;
         foreach (string cardId in hand)
         {
-            DrawCard(cardId);
-            UpdateCardPosition(cardIndex);
+            SpawnCard(cardId, cardIndex, newDeal);
+            if (newDeal)
+            {
+                UpdateCardPosition(cardIndex);
+            }
 
             cardIndex += 1;
         }
     }
 
-    private void DrawCard(string cardId)
+    private void SpawnCard(string cardId, int cardIndex, bool newDeal)
     {
         Card cardData = gameManager.deckDictionary[cardId];
-        GameObject card = Instantiate(cardPrefab, gameManager.cardSpawnPoint.position, gameManager.cardSpawnPoint.rotation);
-        card.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+
+        GameObject card = null;
+        if (newDeal)
+        {
+            card = Instantiate(cardPrefab, gameManager.cardSpawnPoint.position, gameManager.cardSpawnPoint.rotation);
+
+            // shrink card to zero so we can animate it growing
+            card.transform.localScale = Vector3.zero;
+        }
+        else
+        {
+            // calculate where to place the card if it was already in our hand
+            float cardSpacing = 1f / maxHandSize;
+            float firstCardPosition = 0.5f - (hand.Count - 1) * cardSpacing / 2;
+            Spline spline = gameManager.cardSplineContainer.Spline;
+
+            float p = firstCardPosition + cardIndex * cardSpacing;
+            Vector3 splinePosition = spline.EvaluatePosition(p);
+            Vector3 forward = spline.EvaluateTangent(p);
+            Vector3 up = spline.EvaluateUpVector(p);
+            Quaternion rotation = Quaternion.LookRotation(up, Vector3.Cross(up, forward).normalized);
+
+            //card has already been dealt so there won't be any animation
+            card = Instantiate(cardPrefab, splinePosition, rotation);
+        }
+
 
         // this is required for hand specific animations
         if (isLocalPlayer)
         {
             card.GetComponent<CardInteraction2D>().isLocalPlayersCard = true;
         }
-
-        // shrink card to zero so we can animate it growing
-        card.transform.localScale = Vector3.zero;
+        card.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
         
         // the name of the card is used when the player picks the card
         card.name = cardId;
@@ -190,7 +213,7 @@ public class PlayerInventory2D : NetworkBehaviour
         hand.Remove(cardId.Substring(0,4));
         if (isLocalPlayer)
         {
-            DisplayHand();
+            DisplayHand(false);
         }
 
         RpcRemoveCard(cardId);
@@ -204,7 +227,7 @@ public class PlayerInventory2D : NetworkBehaviour
         hand.Remove(cardId.Substring(0,4));
         if (isLocalPlayer)
         {
-            DisplayHand();
+            DisplayHand(false);
         }
     }
 
@@ -214,7 +237,7 @@ public class PlayerInventory2D : NetworkBehaviour
         hand = newHand;
         if (isLocalPlayer)
         {
-            DisplayHand();
+            DisplayHand(true);
         }
     }
 
@@ -226,7 +249,7 @@ public class PlayerInventory2D : NetworkBehaviour
         hand = newHand;
         if (isLocalPlayer)
         {
-            DisplayHand();
+            DisplayHand(true);
         }
     }
 
@@ -239,7 +262,7 @@ public class PlayerInventory2D : NetworkBehaviour
         }
         if (isLocalPlayer)
         {
-            DisplayHand();
+            DisplayHand(true);
         }
     }
 
@@ -254,7 +277,7 @@ public class PlayerInventory2D : NetworkBehaviour
         }
         if (isLocalPlayer)
         {
-            DisplayHand();
+            DisplayHand(true);
         }
     }
 }
