@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Mirror;
+using Mirror.BouncyCastle.Tls;
 using Steamworks;
 using TMPro;
 using Unity.VisualScripting;
@@ -24,7 +25,7 @@ public class GameManager2D : NetworkBehaviour
     [HideInInspector] public List<Player2D> playerOrder;
     [HideInInspector] [SyncVar] public int turnNumber;
     [HideInInspector] [SyncVar] public int roundStartingPlayer;
-    [HideInInspector] public int lastPlayerWonIndex;
+    [HideInInspector] [SyncVar] public int lastPlayerWonIndex;
 
     [HideInInspector] public int currentTricksBid = 0;
     [HideInInspector] public int currentTricksBidTotal = 0;
@@ -168,7 +169,7 @@ public class GameManager2D : NetworkBehaviour
             roundNumber += 1;
             if (roundNumber == cardsPerPlayerPerRound.Count)
             {
-                // TODO: stop all play and just show scoreboard
+                // stop all play
                 return;
             }
 
@@ -185,7 +186,8 @@ public class GameManager2D : NetworkBehaviour
             currentHistPoints = -200; // TODO: have hist points change according to settings and rounds
 
             roundStartingPlayer = (roundStartingPlayer+1)%playerOrder.Count;
-            turnNumber = 0; 
+            lastPlayerWonIndex = roundStartingPlayer;
+            turnNumber = 0;
             ChangeTrickNumber(0);
             RpcChangeTrickNumber(0);
 
@@ -221,6 +223,7 @@ public class GameManager2D : NetworkBehaviour
         }
         else
         {
+            Debug.Log("CalculateNextPlayer trueIndex: " + roundStartingPlayer);
             playerOrder[roundStartingPlayer].GetComponent<Player2D>().TurnStart();
             playerOrder[roundStartingPlayer].GetComponent<Player2D>().RpcTurnStart();
         }
@@ -366,13 +369,6 @@ public class GameManager2D : NetworkBehaviour
         roundNumber = newRoundNumber;
         cardsPerPlayer = cardsPerPlayerPerRound[roundNumber];
     }
-
-    // [Command]
-    // private void CmdSetPlayerOrder(List<GameObject> players)
-    // {
-    //     SetPlayerOrder(players);
-    //     RpcSetPlayerOrder(players);
-    // }
 
     private void SetPlayerOrder(List<GameObject> players)
     {
@@ -523,6 +519,8 @@ public class GameManager2D : NetworkBehaviour
     [ServerCallback]
     public void CalculateNextPlayer()
     {
+        bool startedNewRound = false;
+
         // not the last turn in a trick/bid
         if (turnNumber < playerOrder.Count - 1)
         {
@@ -588,7 +586,7 @@ public class GameManager2D : NetworkBehaviour
                 RpcChangeTrickNumber(-1);
 
                 StartRound();
-                // TODO handle new person being dealer
+                startedNewRound = true;
             }
             else
             {
@@ -601,18 +599,17 @@ public class GameManager2D : NetworkBehaviour
 
         // dont calculate next player if this is the first action of the round because turnstart gets automatically
         // done in the startround function.
-        if (trickNumber == 0 && turnNumber == 0)
+        if (startedNewRound)
         {
-            //Debug.Log("first action of the round!");
+            Debug.Log("first action of the round!");
         }
         else
         {
             int trueIndex = (lastPlayerWonIndex+turnNumber)%playerOrder.Count;
+            Debug.Log("CalculateNextPlayer trueIndex: " + trueIndex);
             playerOrder[trueIndex].GetComponent<Player2D>().TurnStart();
             playerOrder[trueIndex].GetComponent<Player2D>().RpcTurnStart();
         }
-        
-        
     }
 
     public void RemoveAllPlayedCards()

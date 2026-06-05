@@ -61,7 +61,6 @@ public class Player2D : NetworkBehaviour
     [ClientCallback]
     public void CalculateActions()
     {
-
         // just for safety
         if (isLocalPlayer)
         {
@@ -372,8 +371,6 @@ public class Player2D : NetworkBehaviour
 
     public void TurnStart()
     {
-        Debug.Log("starting a turn in Player2D");
-
         // TODO: add visuals when its a players turn
         playerTurn = true;
 
