@@ -351,7 +351,6 @@ public class Player2D : NetworkBehaviour
     private void TurnEnd()
     {
         playerTurn = false;
-        Debug.Log("trying to end turn");
     }
 
     [Command]
@@ -373,6 +372,8 @@ public class Player2D : NetworkBehaviour
 
     public void TurnStart()
     {
+        Debug.Log("starting a turn in Player2D");
+
         // TODO: add visuals when its a players turn
         playerTurn = true;
 

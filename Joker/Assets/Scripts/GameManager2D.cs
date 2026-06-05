@@ -228,10 +228,16 @@ public class GameManager2D : NetworkBehaviour
 
     public void IncreaseRoundMultiplier()
     {
-        roundMultiplyer += 1;
-
         // hide the buttons
         DisplayJokerTrumpOptions(false);
+
+        CmdIncreaseRoundMultiplier();
+    }
+
+    [Command(requiresAuthority = false)]
+    private void CmdIncreaseRoundMultiplier()
+    {
+        roundMultiplyer += 1;
 
         DealCards();
         
@@ -242,6 +248,12 @@ public class GameManager2D : NetworkBehaviour
         // hide the buttons
         DisplayJokerTrumpOptions(false);
 
+        CmdContinueRoundWithJokerTrump();
+    }
+
+    [Command(requiresAuthority = false)]
+    private void CmdContinueRoundWithJokerTrump()
+    {
         playerOrder[roundStartingPlayer].GetComponent<Player2D>().TurnStart();
         playerOrder[roundStartingPlayer].GetComponent<Player2D>().RpcTurnStart();
     }
@@ -587,9 +599,20 @@ public class GameManager2D : NetworkBehaviour
             }
         }
 
-        int trueIndex = (lastPlayerWonIndex+turnNumber)%playerOrder.Count;
-        playerOrder[trueIndex].GetComponent<Player2D>().TurnStart();
-        playerOrder[trueIndex].GetComponent<Player2D>().RpcTurnStart();
+        // dont calculate next player if this is the first action of the round because turnstart gets automatically
+        // done in the startround function.
+        if (trickNumber == 0 && turnNumber == 0)
+        {
+            //Debug.Log("first action of the round!");
+        }
+        else
+        {
+            int trueIndex = (lastPlayerWonIndex+turnNumber)%playerOrder.Count;
+            playerOrder[trueIndex].GetComponent<Player2D>().TurnStart();
+            playerOrder[trueIndex].GetComponent<Player2D>().RpcTurnStart();
+        }
+        
+        
     }
 
     public void RemoveAllPlayedCards()
