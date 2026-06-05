@@ -7,6 +7,7 @@ using TMPro;
 using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using UnityEngine;
+using UnityEngine.Splines;
 
 public class GameManager2D : NetworkBehaviour
 {
@@ -55,6 +56,9 @@ public class GameManager2D : NetworkBehaviour
     [SerializeField] private Sprite diamondSuitArt;
     [SerializeField] private Sprite clubSuitArt;
     [SerializeField] private Sprite noneSuitArt;
+
+    [SerializeField] public Transform cardSpawnPoint;
+    [SerializeField] public SplineContainer cardSplineContainer;
 
     // TODO: UI and Card positions need to be ordered the same way, fix this annoyance using a new class
     [SerializeField] public List<Transform> playerUIPositions;

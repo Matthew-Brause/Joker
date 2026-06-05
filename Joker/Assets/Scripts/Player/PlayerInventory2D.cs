@@ -1,9 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using Mirror;
 using Mirror.BouncyCastle.Math.Field;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Splines;
 
 public class PlayerInventory2D : NetworkBehaviour
 {
@@ -12,8 +15,9 @@ public class PlayerInventory2D : NetworkBehaviour
     [HideInInspector] public GameManager2D gameManager;
 
     [SerializeField] public GameObject cardPrefab;
+    [SerializeField] private int maxHandSize;
 
-    [SerializeField] private float cardSpacing = 1.0f;
+    //[SerializeField] private float cardSpacing = 1.0f;
 
     private List<GameObject> cardsInHand = new List<GameObject>();
 
@@ -26,7 +30,6 @@ public class PlayerInventory2D : NetworkBehaviour
     private void DisplayHand()
     {
         // TODO: order the cards so that it looks nice
-
         
         // clear the previous cards
         if (cardsInHand.Count > 0)
@@ -39,25 +42,54 @@ public class PlayerInventory2D : NetworkBehaviour
         cardsInHand = new List<GameObject>();
         
         
-        int index = 0;
+        // spawn the new cards
+        int cardIndex = 0;
         foreach (string cardId in hand)
         {
-            Card cardData = gameManager.deckDictionary[cardId];
+            DrawCard(cardId);
+            UpdateCardPosition(cardIndex);
 
-            Transform ui = gameManager.localPlayerHandPosition;
-
-            GameObject card = Instantiate(cardPrefab, ui.position, ui.rotation);
-            card.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
-            
-            // the name of the card is used when the player picks the card
-            card.name = cardId;
-            
-            // space the cards
-            card.transform.position = card.transform.position + card.transform.right * cardSpacing * index;
-            index += 1;
-
-            cardsInHand.Add(card);
+            cardIndex += 1;
         }
+    }
+
+    private void DrawCard(string cardId)
+    {
+        Card cardData = gameManager.deckDictionary[cardId];
+        GameObject card = Instantiate(cardPrefab, gameManager.cardSpawnPoint.position, gameManager.cardSpawnPoint.rotation);
+        card.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+
+        // this is required for hand specific animations
+        if (isLocalPlayer)
+        {
+            card.GetComponent<CardInteraction2D>().isLocalPlayersCard = true;
+        }
+
+        // shrink card to zero so we can animate it growing
+        card.transform.localScale = Vector3.zero;
+        
+        // the name of the card is used when the player picks the card
+        card.name = cardId;
+
+        cardsInHand.Add(card);
+    }
+
+    private void UpdateCardPosition(int cardIndex)
+    {
+        float cardSpacing = 1f / maxHandSize;
+        float firstCardPosition = 0.5f - (hand.Count - 1) * cardSpacing / 2;
+        Spline spline = gameManager.cardSplineContainer.Spline;
+
+        float p = firstCardPosition + cardIndex * cardSpacing;
+        Vector3 splinePosition = spline.EvaluatePosition(p);
+        Vector3 forward = spline.EvaluateTangent(p);
+        Vector3 up = spline.EvaluateUpVector(p);
+        Quaternion rotation = Quaternion.LookRotation(up, Vector3.Cross(up, forward).normalized);
+
+        // card animation
+        cardsInHand[cardIndex].transform.DOScale(Vector3.one, 0.25f);
+        cardsInHand[cardIndex].transform.DOMove(splinePosition, 0.25f);
+        cardsInHand[cardIndex].transform.DOLocalRotateQuaternion(rotation, 0.25f);
     }
 
     [ClientCallback]

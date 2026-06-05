@@ -193,6 +193,7 @@ public class Player2D : NetworkBehaviour
 
     public void SetSelectedCard(string cardId, CardInteraction2D cardInteraction)
     {
+        // checks if the card we select is in our hand ? 
         if (inventory.hand.Contains(cardId.Substring(0,4))) // Card ID excluding joker tags (high/low/suit)
         {
             // hide selection UI of old card

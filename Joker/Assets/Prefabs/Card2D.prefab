@@ -594,8 +594,8 @@ Transform:
   m_GameObject: {fileID: 3426976779386139936}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.08, y: 1.52, z: 1}
+  m_LocalPosition: {x: 0, y: 0.01, z: 0}
+  m_LocalScale: {x: 0.45, y: 0.65, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5444778771558153300}
@@ -641,9 +641,9 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 1
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6,
+  m_Sprite: {fileID: 2502796739829887888, guid: 95b78eddfea6b48419a5ee0e4cf54da3,
     type: 3}
-  m_Color: {r: 0.95075846, g: 0, b: 1, a: 1}
+  m_Color: {r: 1, g: 0, b: 0.7524934, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -776,6 +776,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   highlight: {fileID: 3426976779386139936}
   jokerButtons: {fileID: 61934912720495030}
+  isLocalPlayersCard: 0
 --- !u!1 &5067342921838338327
 GameObject:
   m_ObjectHideFlags: 0
