@@ -66,14 +66,20 @@ public class GameManager2D : NetworkBehaviour
     [SerializeField] public List<Transform> playedCardPositions;
     public Transform trumpCardPosition;
 
+    public List<TextMeshProUGUI> scoreboardPointsText;
+    private bool scoreboardShowing;
+    [SerializeField] private GameObject scoreboard;
+
+
     private void Start()
     {
+        DisplayScoreboard(false);
         DisplayTrickButtons(false);
         DisplayEndTurnButton(false);
         DisplayJokerTrumpOptions(false);
         DisplayThreeTrumpOptions(false);
         trumpText.gameObject.SetActive(false);
-        cardsPerPlayerPerRound = new List<int>{9,9,1,2,3,4,5,6,7,8,9,9,9,9,8,7,6,5,4,3,2,1,9,9,9,9};
+        cardsPerPlayerPerRound = new List<int>{1,2,3,4,5,6,7,8,9,9,9,9,8,7,6,5,4,3,2,1,9,9,9,9};
 
         if (isServer)
         {
@@ -89,6 +95,24 @@ public class GameManager2D : NetworkBehaviour
     private void DisplayStartGameButton(bool enable)
     {
         startGameButton.SetActive(enable);
+    }
+    private void DisplayScoreboard(bool enable)
+    {
+        scoreboard.SetActive(enable);
+        scoreboardShowing = enable;
+    }
+
+    private void Update()
+    {
+        if (!scoreboardShowing && Input.GetKeyDown(KeyCode.Tab))
+        {
+            DisplayScoreboard(true);
+        }
+
+        if (scoreboardShowing && Input.GetKeyUp(KeyCode.Tab))
+        {
+            DisplayScoreboard(false);
+        }
     }
 
     public void StartGame()

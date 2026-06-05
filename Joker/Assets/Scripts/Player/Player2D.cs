@@ -144,19 +144,27 @@ public class Player2D : NetworkBehaviour
 
         PlayerInventory2D playerInventory = GetComponent<PlayerInventory2D>();
 
-        // the order of cardsInHand is the same as hand...
-        int cardIndex = playerInventory.hand.IndexOf(cardInPlayID.Substring(0,4));
-        GameObject oldCard = playerInventory.cardsInHand[cardIndex];
-        Vector3 position = oldCard.transform.position;
-        Quaternion rotation = oldCard.transform.rotation;
-
+        // animate playing the card if its from our hand
         GameObject cardPrefab = playerInventory.cardPrefab;
-        cardInPlay = Instantiate(cardPrefab, position, rotation);
-        cardInPlay.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+        if (isLocalPlayer)
+        {
+            // the order of cardsInHand is the same as hand...
+            int cardIndex = playerInventory.hand.IndexOf(cardInPlayID.Substring(0,4));
+            GameObject oldCard = playerInventory.cardsInHand[cardIndex];
+            Vector3 position = oldCard.transform.position;
+            Quaternion rotation = oldCard.transform.rotation;
 
-        // animate playing the card
-        cardInPlay.transform.DOMove(ui.position, 0.25f);
-        cardInPlay.transform.DOLocalRotateQuaternion(ui.rotation, 0.25f);
+            cardInPlay = Instantiate(cardPrefab, position, rotation);
+
+            cardInPlay.transform.DOMove(ui.position, 0.25f);
+            cardInPlay.transform.DOLocalRotateQuaternion(ui.rotation, 0.25f);
+        }
+        else
+        {
+            cardInPlay = Instantiate(cardPrefab, ui.position, ui.rotation);
+        }
+        cardInPlay.GetComponent<SpriteRenderer>().sprite = cardData.cardArt;
+        
 
 
         // TODO: if the card is a joker, show properties like high/low and suit
@@ -172,7 +180,6 @@ public class Player2D : NetworkBehaviour
             tricksWon += 1;
         }
 
-        // TODO: add scoreboard
         int points = 0;
         if (tricksBid == tricksWon)
         {
@@ -190,13 +197,31 @@ public class Player2D : NetworkBehaviour
         {
             points = currentHistPoints*roundMultiplyer;
         }
-        // problem, pointsWon is not initialized?
         pointsWon[roundNumber] = points;
+        UpdateScoreboard(roundNumber);
 
         tricksBid = 0;
         tricksWon = 0;
         DisplayTricksBid(false);
         DisplayTricksWon(false);
+    }
+
+    private void UpdateScoreboard(int roundNumber)
+    {
+        List<TextMeshProUGUI> scoreboardPointsText = gameManager.scoreboardPointsText;
+
+        // find the players text
+        int playerIndex = 0;
+        foreach (Player2D player in gameManager.playerOrder)
+        {
+            if (player.netId == this.netId)
+            {
+                break;
+            }
+            playerIndex += 1;
+        }
+
+        scoreboardPointsText[playerIndex].text = pointsWon[roundNumber].ToString();
     }
 
     [ClientRpc]
@@ -326,6 +351,7 @@ public class Player2D : NetworkBehaviour
     private void TurnEnd()
     {
         playerTurn = false;
+        Debug.Log("trying to end turn");
     }
 
     [Command]
