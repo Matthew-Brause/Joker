@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using DG.Tweening;
 using Mirror;
 using Mirror.BouncyCastle.Math.Field;
@@ -28,6 +29,7 @@ public class PlayerInventory2D : NetworkBehaviour
     private void DisplayHand(bool newDeal)
     {
         // TODO: order the cards so that it looks nice
+        SortHand();
         
         // clear the previous cards
         if (cardsInHand.Count > 0)
@@ -41,6 +43,7 @@ public class PlayerInventory2D : NetworkBehaviour
         
         // spawn the new cards
         // TODO: its important that hand and cardsInHand have the same ordering, fix this?
+        // Hopefully because I sort "hand" before making "cardsInHand" its okay?
         int cardIndex = 0;
         foreach (string cardId in hand)
         {
@@ -52,6 +55,59 @@ public class PlayerInventory2D : NetworkBehaviour
 
             cardIndex += 1;
         }
+    }
+
+    private void SortHand()
+    {
+        List<string> sortedHand = new List<string>(hand);
+        int cardsSwapped = 1;
+        while (cardsSwapped > 0)
+        {
+            cardsSwapped = 0;
+            for (int i = 0; i < sortedHand.Count - 1; i++)
+            {
+                if (GetCardUUID(sortedHand[i]) > GetCardUUID(sortedHand[i+1]))
+                {
+                    string tempCardId = sortedHand[i];
+                    sortedHand[i] = sortedHand[i+1];
+                    sortedHand[i+1] = tempCardId;
+                    cardsSwapped += 1;
+                }
+            }
+        }
+        hand = sortedHand;
+    }
+
+    // TODO: probably change this function name, this is just to create an ordering of the cards for sorting
+    private int GetCardUUID(string cardId)
+    {
+        int cardValue = int.Parse(cardId.Substring(0,2));
+        char cardSuit = cardId[3];
+        int suitValue;
+        switch (cardSuit)
+        {
+            // cases are separated by 20 so they naturally get grouped by suit and the card value sorts within a suit (yes this number could be like 10 instead and not have issues)
+            case 'j': // putting jokers at the front
+                suitValue = 0;
+                break;
+            case 'c': // clubs come next
+                suitValue = 20;
+                break;
+            case 'h': // then hearts
+                suitValue = 40;
+                break;
+            case 's': // then spades
+                suitValue = 60;
+                break;
+            case 'd': // lastly diamonds (alternating colors so its easier to see)
+                suitValue = 80;
+                break;
+            default: // somehow the card we got isn't a joker, club, heart, spade, or diamond
+                suitValue = -20; 
+                Debug.Log("Error: Unknown suit when sorting card " + cardId);
+                break;
+        }
+        return suitValue + cardValue;
     }
 
     private void SpawnCard(string cardId, int cardIndex, bool newDeal)
