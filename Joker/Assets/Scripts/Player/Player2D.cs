@@ -182,7 +182,18 @@ public class Player2D : NetworkBehaviour
         int points = 0;
         if (tricksBid == tricksWon)
         {
-            points = 50 + 50*tricksWon;
+            // if player bids for all tricks they get 100 points per trick
+            if (tricksBid == gameManager.cardsPerPlayerPerRound[roundNumber])
+            {
+                points = 100*tricksWon;
+            }
+            // if player doesn't bid for all tricks they get 50 points + 50 points per trick
+            else
+            {
+                points = 50 + 50*tricksWon; // yes this could just be 50*(tricksWon+1)
+            }
+
+            // if player didn't pass, they can multiply by roundMultiplyer
             if (points != 50)
             {
                 points = points*roundMultiplyer;
