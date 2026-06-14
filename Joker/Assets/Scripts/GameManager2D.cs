@@ -7,6 +7,7 @@ using Steamworks;
 using TMPro;
 using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime.Tree;
+using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 using UnityEngine.Splines;
 
@@ -23,6 +24,7 @@ public class GameManager2D : NetworkBehaviour
 
     [HideInInspector] public int trickNumber;
     [HideInInspector] public List<Player2D> playerOrder;
+    [HideInInspector] public List<Player2D> playerUIOrder;
     [HideInInspector] [SyncVar] public int turnNumber;
     [HideInInspector] [SyncVar] public int roundStartingPlayer;
     [HideInInspector] [SyncVar] public int lastPlayerWonIndex;
@@ -80,7 +82,7 @@ public class GameManager2D : NetworkBehaviour
         DisplayJokerTrumpOptions(false);
         DisplayThreeTrumpOptions(false);
         trumpText.gameObject.SetActive(false);
-        cardsPerPlayerPerRound = new List<int>{2,1,2,3,4,5,6,7,8,9,9,9,9,8,7,6,5,4,3,2,1,9,9,9,9};
+        cardsPerPlayerPerRound = new List<int>{3,3,3,1,2,3,4,5,6,7,8,9,9,9,9,8,7,6,5,4,3,2,1,9,9,9,9};
 
         if (isServer)
         {
@@ -118,6 +120,8 @@ public class GameManager2D : NetworkBehaviour
 
     public void StartGame()
     {
+        // TODO: This shit is funky when doing it mid match with multiple people
+        // TODO: Remove joker trump buttons on start game
         roundNumber = -1;
         if (isServer)
         {
@@ -164,6 +168,7 @@ public class GameManager2D : NetworkBehaviour
         {
             // TODO: make sure there are 4 players in the lobby
             // Shouldn't ever happen once game is done
+
             
             // that was the last round
             roundNumber += 1;
@@ -188,6 +193,7 @@ public class GameManager2D : NetworkBehaviour
             roundStartingPlayer = (roundStartingPlayer+1)%playerOrder.Count;
             lastPlayerWonIndex = roundStartingPlayer;
             turnNumber = 0;
+            trickCards = new List<string>();
             ChangeTrickNumber(0);
             RpcChangeTrickNumber(0);
 
@@ -375,16 +381,8 @@ public class GameManager2D : NetworkBehaviour
         playerOrder = new List<Player2D>();
         for (int i = 0; i < players.Count; i++)
         {
-            // find who the local player is
-            if (players[i].GetComponent<Player2D>() == localPlayer)
-            {
-                // add players to the list after local player
-                for (int j = 0; j < players.Count; j++)
-                {
-                    Player2D player = players[(i+j)%players.Count].GetComponent<Player2D>();
-                    playerOrder.Add(player);
-                }
-            }
+            Player2D player = players[i].GetComponent<Player2D>();
+            playerOrder.Add(player);
         }
         SetPlayerUI();
     }
@@ -497,14 +495,21 @@ public class GameManager2D : NetworkBehaviour
 
     private void SetPlayerUI()
     {
-        int canvasIndex = 0;
-        foreach (Player2D player in playerOrder)
+        playerUIOrder = new List<Player2D>();
+        for (int i = 0; i < playerOrder.Count; i++)
         {
-            player.playerUI.SetParent(playerUIPositions[canvasIndex]);
-            player.playerUI.position = playerUIPositions[canvasIndex].position;
-            player.playerUI.rotation = playerUIPositions[canvasIndex].rotation;
-            
-            canvasIndex += 1;
+            if (playerOrder[i].GetComponent<Player2D>() == localPlayer)
+            {
+                for (int j = 0; j < playerOrder.Count; j++)
+                {
+                    Player2D player = playerOrder[(i+j)%playerOrder.Count];
+                    playerUIOrder.Add(player);
+                    player.playerUI.SetParent(playerUIPositions[j]);
+                    player.playerUI.position = playerUIPositions[j].position;
+                    player.playerUI.rotation = playerUIPositions[j].rotation;
+                }
+                break;
+            }
         }
     }
 
@@ -531,6 +536,7 @@ public class GameManager2D : NetworkBehaviour
             // not the bidding part and not the last trick
             if (trickNumber != 0  && trickNumber != cardsPerPlayer)
             {
+                // TODO: something going wrong where the next player is being calculated wrong, even when same suit cards are played (throw some print statements)
                 // decide winner and reorder if it wasn't the last round
                 string bestCard = trickCards[0];
                 int bestCardPosition = 0;
@@ -542,6 +548,7 @@ public class GameManager2D : NetworkBehaviour
                         bestCardPosition = i;
                     }
                 }
+
                 lastPlayerWonIndex = (lastPlayerWonIndex+bestCardPosition)%playerOrder.Count;
 
                 playerOrder[lastPlayerWonIndex].RpcWonTrick();
@@ -621,10 +628,10 @@ public class GameManager2D : NetworkBehaviour
         }
     }
 
-    private bool IsCardBetter(string currentCard, string newCard)
+    private bool IsCardBetter(string currentBestCard, string newCard)
     {
-        int currentCardValue = int.Parse(currentCard.Substring(0,2));
-        char currentCardSuit = currentCard[3];
+        int currentBestCardValue = int.Parse(currentBestCard.Substring(0,2));
+        char currentBestCardSuit = currentBestCard[3];
         int newCardValue = int.Parse(newCard.Substring(0,2));
         char newCardSuit = newCard[3];
         if (newCardSuit == 'j') 
@@ -642,22 +649,43 @@ public class GameManager2D : NetworkBehaviour
                 Debug.Log("Error: Joker not high or low");
             }
         } 
-        else if (currentCardSuit == 'j') 
+        else if (currentBestCardSuit == 'j') 
         {
-            if (currentCard[4] == 'h')
+            if (currentBestCard[4] == 'h')
             {
                 return false; // left these as separate because I would look at this later and forget that I handled jokers
+            } 
+            else if (currentBestCard[4] == 'l')
+            {
+                // if new card follows suit
+                if (newCardSuit == initialCardSuit)
+                {
+                    return true;
+                }
+                // if new card is trump
+                else if (newCardSuit == trumpSuit)
+                {
+                    return true;
+                }
+                else 
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                Debug.Log("Error: Joker not high or low");
             }
         } 
 
 
         // if current card is following suit
-        if (currentCardSuit == initialCardSuit)
+        if (currentBestCardSuit == initialCardSuit)
         {
             // if new card follows suit
             if (newCardSuit == initialCardSuit)
             {
-                if (newCardValue > currentCardValue) 
+                if (newCardValue > currentBestCardValue) 
                 {
                     return true;
                 }
@@ -677,11 +705,11 @@ public class GameManager2D : NetworkBehaviour
             }
         }
         // if current card is trump
-        else if (currentCardSuit == trumpSuit)
+        else if (currentBestCardSuit == trumpSuit)
         {
             if (newCardSuit == trumpSuit)
             {
-                if (newCardValue > currentCardValue) 
+                if (newCardValue > currentBestCardValue) 
                 {
                     return true;
                 }

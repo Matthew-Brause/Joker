@@ -133,7 +133,7 @@ public class Player2D : NetworkBehaviour
     {
         Card cardData = gameManager.deckDictionary[cardInPlayID.Substring(0,4)]; // TODO this line is might lead to possible bugs make sure it isn't
 
-        int playerIndex = gameManager.playerOrder.IndexOf(GetComponent<Player2D>());
+        int playerIndex = gameManager.playerUIOrder.IndexOf(GetComponent<Player2D>());
         Transform ui = gameManager.playedCardPositions[playerIndex];
 
         if (gameManager.turnNumber == 0)
@@ -180,7 +180,7 @@ public class Player2D : NetworkBehaviour
         }
 
         int points = 0;
-        if (tricksBid == tricksWon)
+        if (tricksBid == tricksWon) // you got your bid
         {
             // if player bids for all tricks they get 100 points per trick
             if (tricksBid == gameManager.cardsPerPlayerPerRound[roundNumber])

@@ -28,7 +28,7 @@ public class PlayerInventory2D : NetworkBehaviour
     [ClientCallback]
     private void DisplayHand(bool newDeal)
     {
-        // TODO: order the cards so that it looks nice
+        // Order the cards so that it looks nice
         SortHand();
         
         // clear the previous cards
@@ -66,7 +66,7 @@ public class PlayerInventory2D : NetworkBehaviour
             cardsSwapped = 0;
             for (int i = 0; i < sortedHand.Count - 1; i++)
             {
-                if (GetCardUUID(sortedHand[i]) > GetCardUUID(sortedHand[i+1]))
+                if (GetCardSortID(sortedHand[i]) > GetCardSortID(sortedHand[i+1]))
                 {
                     string tempCardId = sortedHand[i];
                     sortedHand[i] = sortedHand[i+1];
@@ -78,8 +78,7 @@ public class PlayerInventory2D : NetworkBehaviour
         hand = sortedHand;
     }
 
-    // TODO: probably change this function name, this is just to create an ordering of the cards for sorting
-    private int GetCardUUID(string cardId)
+    private int GetCardSortID(string cardId)
     {
         int cardValue = int.Parse(cardId.Substring(0,2));
         char cardSuit = cardId[3];
