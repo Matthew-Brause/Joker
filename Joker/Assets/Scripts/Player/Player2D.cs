@@ -131,7 +131,7 @@ public class Player2D : NetworkBehaviour
 
     private void DisplayPlayCard()
     {
-        Card cardData = gameManager.deckDictionary[cardInPlayID.Substring(0,4)]; // TODO this line is might lead to possible bugs make sure it isn't
+        Card cardData = gameManager.deckDictionary[cardInPlayID.Substring(0,4)];
 
         int playerIndex = gameManager.playerUIOrder.IndexOf(GetComponent<Player2D>());
         Transform ui = gameManager.playedCardPositions[playerIndex];

@@ -25,7 +25,6 @@ public class CardInteraction2D : MonoBehaviour
 
     private void OnMouseEnter()
     {
-        // TODO make hovering logic so light blue box or something around card
         if (isLocalPlayersCard)
         {
             this.transform.DOScale(Vector3.one * 1.25f, 0.15f);

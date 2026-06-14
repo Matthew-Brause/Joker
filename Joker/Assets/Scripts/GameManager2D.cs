@@ -187,7 +187,7 @@ public class GameManager2D : NetworkBehaviour
 
             // start the trick
             // loop 0 is the trick choosing part
-            roundMultiplyer = 1; // TODO: have round multiplyer change with joker being trump stuff
+            roundMultiplyer = 1; 
             currentHistPoints = -200; // TODO: have hist points change according to settings and rounds
 
             roundStartingPlayer = (roundStartingPlayer+1)%playerOrder.Count;
@@ -536,7 +536,6 @@ public class GameManager2D : NetworkBehaviour
             // not the bidding part and not the last trick
             if (trickNumber != 0  && trickNumber != cardsPerPlayer)
             {
-                // TODO: something going wrong where the next player is being calculated wrong, even when same suit cards are played (throw some print statements)
                 // decide winner and reorder if it wasn't the last round
                 string bestCard = trickCards[0];
                 int bestCardPosition = 0;

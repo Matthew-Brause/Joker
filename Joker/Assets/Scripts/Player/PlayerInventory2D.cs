@@ -42,8 +42,6 @@ public class PlayerInventory2D : NetworkBehaviour
         cardsInHand = new List<GameObject>();
         
         // spawn the new cards
-        // TODO: its important that hand and cardsInHand have the same ordering, fix this?
-        // Hopefully because I sort "hand" before making "cardsInHand" its okay?
         int cardIndex = 0;
         foreach (string cardId in hand)
         {
